@@ -1,9 +1,9 @@
 """Trigger the configured Dokploy Compose resource without logging credentials."""
 
-import fnmatch
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 import time
@@ -13,41 +13,8 @@ import urllib.request
 import uuid
 from pathlib import Path
 
-
-class NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        return None
-
-
-class PinnedProxy(urllib.request.ProxyHandler):
-    def proxy_open(self, req, proxy, type):
-        # Proxy selection is explicit; inherited NO_PROXY must not change it.
-        req.set_proxy(urllib.parse.urlsplit(proxy).netloc, "http")
-        return None
-
-
-def approved_opener():
-    mode = os.environ.get("DOKPLOY_TRANSPORT")
-    if mode == "direct":
-        handler = urllib.request.ProxyHandler({})
-    elif mode == "proxy":
-        proxy = os.environ.get("DOKPLOY_APPROVED_PROXY", "")
-        parsed = urllib.parse.urlsplit(proxy)
-        if (
-            parsed.scheme != "http"
-            or not parsed.hostname
-            or not parsed.port
-            or parsed.username
-            or parsed.password
-            or parsed.path not in {"", "/"}
-            or parsed.query
-            or parsed.fragment
-        ):
-            raise ValueError("Configure the exact approved HTTP proxy origin")
-        handler = PinnedProxy({"http": proxy, "https": proxy})
-    else:
-        raise ValueError("Explicitly select direct or approved proxy transport")
-    return urllib.request.build_opener(handler, NoRedirect())
+from transport import NoRedirect as NoRedirect
+from transport import approved_opener, approved_proxy
 
 
 def validate_url(value):
@@ -94,17 +61,52 @@ def api(base, token, route, data=None, query=None):
         return json.loads(body) if body else None
 
 
-def revision_environment(value, revision):
+def parse_environment(value):
     if not isinstance(value, str) or not value.strip():
-        raise ValueError("Compose environment is missing or redacted; refusing to replace it")
-    passwords = re.findall(r"^POSTGRES_PASSWORD=([^\r\n]*)$", value, re.MULTILINE)
-    if len(passwords) != 1 or not re.fullmatch(r"[0-9a-fA-F]{32,128}", passwords[0]):
-        raise ValueError("Compose requires one configured hexadecimal PostgreSQL secret")
-    lines = [
-        line
-        for line in value.splitlines()
-        if not re.match(r"^\s*(?:export\s+)?(?:APP_REVISION|APP_IMAGE)\s*=", line)
-    ]
+        raise ValueError("Compose environment is missing or redacted")
+    fields = {}
+    for line in value.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        key, separator, content = line.partition("=")
+        if (
+            not separator
+            or not re.fullmatch(r"[A-Z_][A-Z_0-9]*", key)
+            or key in fields
+            or content.startswith(("'", '"'))
+            or re.fullmatch(r"\*{3,}|\[?redacted\]?|<redacted>|changeme", content, re.I)
+        ):
+            raise ValueError("Environment contains ambiguous or redacted fields")
+        fields[key] = content
+    required = {"POSTGRES_PASSWORD", "APP_BIND_HOST", "APP_PORT", "APP_REVISION", "APP_IMAGE"}
+    if any(not fields.get(key) for key in required):
+        raise ValueError("Environment lacks required Compose fields")
+    if not re.fullmatch(r"[0-9a-fA-F]{32,128}", fields["POSTGRES_PASSWORD"]):
+        raise ValueError("Compose requires a configured hexadecimal PostgreSQL secret")
+    return fields
+
+
+def revision_environment(value, revision):
+    path = os.environ.get("DOKPLOY_ENV_FILE")
+    if not path:
+        raise ValueError("An authoritative protected Compose environment file is required")
+    with open(path, encoding="utf-8") as file:
+        metadata = os.fstat(file.fileno())
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_mode & 0o077
+            or metadata.st_uid != os.getuid()
+        ):
+            raise ValueError("Authoritative environment must be owned by this user and mode 0600")
+        snapshot = file.read()
+    expected = parse_environment(snapshot)
+    actual = parse_environment(value)
+    mutable = {"APP_REVISION", "APP_IMAGE"}
+    if actual.keys() != expected.keys() or any(
+        actual[key] != expected[key] for key in expected.keys() - mutable
+    ):
+        raise ValueError("Compose environment does not match the complete authoritative snapshot")
+    lines = [line for line in snapshot.splitlines() if line.partition("=")[0] not in mutable]
     return "\n".join([*lines, f"APP_REVISION={revision}", f"APP_IMAGE=logs-ai:{revision}", ""])
 
 
@@ -118,6 +120,21 @@ def github_json(path):
     )
     with approved_opener().open(request, timeout=30) as response:
         return json.load(response)
+
+
+def ref_pattern_matches(pattern, ref):
+    if pattern == "~ALL":
+        return True
+    if (
+        not isinstance(pattern, str)
+        or not pattern.startswith("refs/")
+        or "**" in pattern
+        or any(char in pattern for char in "?[]{}\\")
+    ):
+        raise ValueError("Unsupported ruleset pattern; exact or component-local star is required")
+    # GitHub uses FNM_PATHNAME: a single star must never cross a slash.
+    regex = re.escape(pattern).replace(r"\*", "[^/]*")
+    return re.fullmatch(regex, ref) is not None
 
 
 def require_immutable_tag(tag):
@@ -137,11 +154,12 @@ def require_immutable_tag(tag):
         ):
             continue
         names = rule.get("conditions", {}).get("ref_name", {})
-        includes = names.get("include", [])
-        excludes = names.get("exclude", [])
-        if any(p == "~ALL" or fnmatch.fnmatchcase(ref, p) for p in includes) and not any(
-            p == "~ALL" or fnmatch.fnmatchcase(ref, p) for p in excludes
-        ):
+        includes, excludes = names.get("include"), names.get("exclude")
+        if not isinstance(includes, list) or not isinstance(excludes, list):
+            raise ValueError("Ruleset coverage response is incomplete")
+        included = [ref_pattern_matches(p, ref) for p in includes]
+        excluded = [ref_pattern_matches(p, ref) for p in excludes]
+        if any(included) and not any(excluded):
             covered.update(r.get("type") for r in rule.get("rules", []))
     if not {"update", "deletion"} <= covered:
         raise ValueError("Active remote tag update/deletion protection without bypass is required")
@@ -162,9 +180,12 @@ def wait_deployment(base, token, compose_id, previous_ids, title, result):
             raise ValueError("Concurrent deployments prevent unambiguous request correlation")
         if new:
             record = new[0]
-            if record.get("composeId") != compose_id or (
-                record.get("deploymentId") != returned_id and record.get("title") != title
-            ):
+            identity_matches = (
+                record.get("deploymentId") == returned_id
+                if returned_id is not None
+                else record.get("title") == title
+            )
+            if record.get("composeId") != compose_id or not identity_matches:
                 raise ValueError("New deployment does not match this request")
             if record.get("status") == "done":
                 return record
@@ -174,29 +195,74 @@ def wait_deployment(base, token, compose_id, previous_ids, title, result):
     raise RuntimeError("Requested deployment timed out")
 
 
+def git_transport():
+    proxy = approved_proxy() or ""
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key.lower() not in {"http_proxy", "https_proxy", "all_proxy", "no_proxy"}
+    }
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    command = [
+        "git",
+        "-c",
+        f"http.proxy={proxy}",
+        "-c",
+        f"http.https://github.com.proxy={proxy}",
+        "-c",
+        f"remote.origin.proxy={proxy}",
+        "-c",
+        "http.followRedirects=false",
+    ]
+    url = "https://github.com/provedorconsult/logs-ai.git"
+    for key, expected in [("http.proxy", proxy), ("http.followRedirects", "false")]:
+        actual = subprocess.check_output(
+            [*command, "config", "--get-urlmatch", key, url], env=env, text=True
+        ).strip()
+        if actual != expected:
+            raise ValueError("Git URL-specific configuration conflicts with approved transport")
+    return command, env
+
+
 def publish_deployment_ref(revision):
     if subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip() != revision:
         raise ValueError("Local checkout does not match EXPECTED_REVISION")
-    remote = urllib.parse.urlsplit(
-        subprocess.check_output(["git", "remote", "get-url", "origin"], text=True).strip()
-    )
-    if remote.hostname != "github.com" or remote.path not in {
-        "/provedorconsult/logs-ai",
-        "/provedorconsult/logs-ai.git",
-    }:
-        raise ValueError("Deployment refs may only be published to logs-ai")
+    for push in [False, True]:
+        urls = subprocess.check_output(
+            ["git", "remote", "get-url", "--all", *(["--push"] if push else []), "origin"],
+            text=True,
+        ).splitlines()
+        if len(urls) != 1:
+            raise ValueError("Exactly one logs-ai fetch/push origin is required")
+        remote = urllib.parse.urlsplit(urls[0])
+        if (
+            remote.scheme != "https"
+            or remote.hostname != "github.com"
+            or remote.port not in {None, 443}
+            or remote.username
+            or remote.password
+            or remote.query
+            or remote.fragment
+            or remote.path not in {"/provedorconsult/logs-ai", "/provedorconsult/logs-ai.git"}
+        ):
+            raise ValueError("Deployment refs may only be published to logs-ai")
+    command, env = git_transport()
     tag = f"logs-ai-deploy-{revision}"
     ref = f"refs/tags/{tag}"
-    existing = subprocess.check_output(["git", "ls-remote", "origin", ref], text=True).strip()
+    existing = subprocess.check_output(
+        [*command, "ls-remote", "origin", ref], env=env, text=True, timeout=30
+    ).strip()
     if existing:
         if existing.split()[0] != revision:
             raise ValueError("Deployment ref already points to a different commit")
     else:
         # Never overwrite a deployment ref, including on retry.
         subprocess.run(
-            ["git", "push", "origin", f"{revision}:{ref}"],
+            [*command, "push", "origin", f"{revision}:{ref}"],
+            env=env,
             check=True,
             capture_output=True,
+            timeout=30,
         )
     return tag
 
@@ -292,7 +358,7 @@ if __name__ == "__main__":
         ValueError,
         urllib.error.URLError,
         RuntimeError,
-        subprocess.CalledProcessError,
+        subprocess.SubprocessError,
     ):
         print("Deploy failed: verify configuration, transport and API contract", file=sys.stderr)
         sys.exit(1)

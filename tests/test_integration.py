@@ -4,7 +4,7 @@ import os
 
 import psycopg
 import pytest
-from database_guard import validate_test_database
+from database_guard import connect_test_database, validate_test_database
 from fastapi.testclient import TestClient
 
 from logs_ai.main import app
@@ -20,10 +20,10 @@ def database(monkeypatch):
     url = os.environ["TEST_DATABASE_URL"]
     validate_test_database(url)
     monkeypatch.setenv("DATABASE_URL", url)
-    with psycopg.connect(url) as conn:
+    with connect_test_database(url) as conn:
         conn.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")
     yield
-    with psycopg.connect(url) as conn:
+    with connect_test_database(url) as conn:
         conn.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")
 
 

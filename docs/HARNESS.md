@@ -58,6 +58,10 @@ Fixar também o transporte (`DOKPLOY_TRANSPORT` e, quando aplicável,
 `DOKPLOY_APPROVED_PROXY`); um proxy herdado não é prova de confiança. No runtime
 Cloud, usar o proxy gerenciado aprovado, conforme suas instruções. O cliente
 recusa transporte implícito e redirects.
+Essa política vale também para readiness e subprocessos Git. Um HTTP 200 vindo
+de redirect ou proxy herdado não valida a origem configurada. Conferir a fonte
+autoritativa completa em `DOKPLOY_ENV_FILE` antes de qualquer atualização do
+ambiente Compose; sua completude não pode ser inferida de uma senha presente.
 
 ## Checklist pós-deploy
 

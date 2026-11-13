@@ -1,5 +1,8 @@
 # G02 — Resposta do Maker ao parecer de Hermes
 
+Registro da primeira rodada. A reavaliação de `8fefce0` encontrou lacunas;
+correções posteriores: [G02-CHECKER-B-FIXES.md](G02-CHECKER-B-FIXES.md).
+
 Data: 13/11/2026 (America/Sao_Paulo). Base confrontada: `origin/main`
 `2730db0cd6ef57e880c3b8c96d5663f3a9fd40f5`, checkout inicialmente limpo.
 Entrada: `G02-CHECKER-REVISAO-INDEPENDENTE.md`, SHA-256

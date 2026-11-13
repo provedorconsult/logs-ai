@@ -70,6 +70,15 @@ def configure_deploy(monkeypatch):
     monkeypatch.setenv("DOKPLOY_PROJECT_ID", "logs-project")
     monkeypatch.setenv("DOKPLOY_API_CONTRACT_VERIFIED", "true")
     monkeypatch.setenv("EXPECTED_REVISION", "a" * 40)
+    environment = (
+        "POSTGRES_PASSWORD="
+        + "12" * 32
+        + "\nAPP_BIND_HOST=127.0.0.1\nAPP_PORT=18000\nAPP_REVISION=old\nAPP_IMAGE=old\n"
+    )
+    snapshot = Path(deploy.os.environ["DOKPLOY_DEPLOYMENT_RECEIPT"]).with_name("compose.env")
+    snapshot.write_text(environment)
+    snapshot.chmod(0o600)
+    monkeypatch.setenv("DOKPLOY_ENV_FILE", str(snapshot))
     return {
         "environment": {"projectId": "logs-project"},
         "sourceType": "git",
@@ -78,7 +87,7 @@ def configure_deploy(monkeypatch):
         "composeType": "docker-compose",
         "composePath": "docker-compose.yml",
         "autoDeploy": False,
-        "env": "POSTGRES_PASSWORD=" + "12" * 32 + "\nAPP_REVISION=old\nAPP_IMAGE=old\n",
+        "env": environment,
     }
 
 
@@ -156,7 +165,9 @@ def test_deploy_rejects_wrong_resource_before_mutating(monkeypatch, field):
 
 @pytest.mark.parametrize("existing", ["", "a" * 40 + "\trefs/tags/test"])
 def test_deployment_ref_published_once_without_force(monkeypatch, existing):
-    responses = iter(["a" * 40, "https://github.com/provedorconsult/logs-ai.git", existing])
+    url = "https://github.com/provedorconsult/logs-ai.git"
+    responses = iter(["a" * 40, url, url, existing])
+    monkeypatch.setattr(deploy, "git_transport", lambda: (["git"], {}))
     monkeypatch.setattr(deploy.subprocess, "check_output", lambda *a, **k: next(responses))
     pushed = []
     monkeypatch.setattr(deploy.subprocess, "run", lambda args, **k: pushed.append(args))
@@ -172,7 +183,9 @@ def test_deployment_ref_published_once_without_force(monkeypatch, existing):
 
 
 def test_existing_deployment_ref_cannot_be_retargeted(monkeypatch):
-    responses = iter(["a" * 40, "https://github.com/provedorconsult/logs-ai.git", "b" * 40])
+    url = "https://github.com/provedorconsult/logs-ai.git"
+    responses = iter(["a" * 40, url, url, "b" * 40])
+    monkeypatch.setattr(deploy, "git_transport", lambda: (["git"], {}))
     monkeypatch.setattr(deploy.subprocess, "check_output", lambda *a, **k: next(responses))
     with pytest.raises(ValueError, match="different commit"):
         deploy.publish_deployment_ref("a" * 40)
@@ -300,3 +313,142 @@ def test_deployment_must_be_correlated_to_this_request(monkeypatch):
     )
     with pytest.raises(ValueError, match="match this request"):
         deploy.wait_deployment("base", "synthetic", "c", set(), "request", {})
+
+
+def test_returned_id_cannot_be_replaced_by_same_title(monkeypatch):
+    monkeypatch.setattr(
+        deploy,
+        "api",
+        lambda *a, **k: [
+            {"deploymentId": "other", "composeId": "c", "status": "done", "title": "request"}
+        ],
+    )
+    with pytest.raises(ValueError, match="match this request"):
+        deploy.wait_deployment(
+            "base", "synthetic", "c", set(), "request", {"deploymentId": "actual"}
+        )
+
+
+def test_title_fallback_ignores_history_when_api_has_no_id(monkeypatch):
+    monkeypatch.setattr(
+        deploy,
+        "api",
+        lambda *a, **k: [
+            {"deploymentId": "old", "composeId": "c", "status": "done", "title": "request"},
+            {"deploymentId": "new", "composeId": "c", "status": "done", "title": "request"},
+        ],
+    )
+    record = deploy.wait_deployment("base", "synthetic", "c", {"old"}, "request", {})
+    assert record["deploymentId"] == "new"
+
+
+def test_returned_id_is_authoritative_when_server_changes_title(monkeypatch):
+    monkeypatch.setattr(
+        deploy,
+        "api",
+        lambda *a, **k: [
+            {"deploymentId": "actual", "composeId": "c", "status": "done", "title": "server-title"},
+        ],
+    )
+    record = deploy.wait_deployment(
+        "base", "synthetic", "c", set(), "request", {"deploymentId": "actual"}
+    )
+    assert record["deploymentId"] == "actual"
+
+
+@pytest.mark.parametrize(
+    "pattern,expected",
+    [
+        ("refs/*", False),
+        ("refs/tags/*", True),
+        ("~ALL", True),
+        ("refs/tags/logs-ai-deploy-*", True),
+        ("refs/heads/*", False),
+    ],
+)
+def test_ruleset_star_cannot_cross_slashes(pattern, expected):
+    assert deploy.ref_pattern_matches(pattern, "refs/tags/logs-ai-deploy-" + "a" * 40) is expected
+
+
+@pytest.mark.parametrize(
+    "pattern", ["refs/**", "refs/tags/**", "refs/tags/[a-z]*", "~DEFAULT_BRANCH"]
+)
+def test_unsupported_rule_patterns_fail_closed(pattern):
+    with pytest.raises(ValueError):
+        deploy.ref_pattern_matches(pattern, "refs/tags/logs-ai-deploy-" + "a" * 40)
+
+
+@pytest.mark.parametrize("change", ["omit", "redact", "extra", "manifest_permissions"])
+def test_every_preserved_field_must_match_authoritative_manifest(monkeypatch, change):
+    compose = configure_deploy(monkeypatch)
+    snapshot = Path(deploy.os.environ["DOKPLOY_ENV_FILE"])
+    complete = compose["env"] + "OTHER_SECRET=synthetic-value\n"
+    snapshot.write_text(complete)
+    current = complete
+    if change == "omit":
+        current = compose["env"]
+    if change == "redact":
+        current = complete.replace("synthetic-value", "********")
+    if change == "extra":
+        current += "UNKNOWN_SECRET=synthetic\n"
+    if change == "manifest_permissions":
+        snapshot.chmod(0o644)
+    with pytest.raises(ValueError):
+        deploy.revision_environment(current, "a" * 40)
+
+
+def test_redacted_manifest_is_not_a_valid_source_of_truth(monkeypatch):
+    compose = configure_deploy(monkeypatch)
+    value = compose["env"] + "OTHER_SECRET=********\n"
+    Path(deploy.os.environ["DOKPLOY_ENV_FILE"]).write_text(value)
+    with pytest.raises(ValueError, match="redacted"):
+        deploy.revision_environment(value, "a" * 40)
+
+
+def test_complete_manifest_preserves_other_secrets_across_revision_changes(monkeypatch):
+    compose = configure_deploy(monkeypatch)
+    complete = compose["env"] + "OTHER_SECRET=synthetic-preserved-value\n"
+    Path(deploy.os.environ["DOKPLOY_ENV_FILE"]).write_text(complete)
+    actual = complete.replace("APP_REVISION=old", "APP_REVISION=" + "b" * 40)
+    actual = actual.replace("APP_IMAGE=old", "APP_IMAGE=logs-ai:" + "b" * 40)
+    result = deploy.revision_environment(actual, "a" * 40)
+    assert "OTHER_SECRET=synthetic-preserved-value\n" in result
+    assert "APP_REVISION=" + "a" * 40 in result
+
+
+@pytest.mark.parametrize(
+    "includes,excludes",
+    [
+        (["refs/*"], []),
+        (["~ALL"], ["refs/tags/*"]),
+        (["refs/**"], []),
+        (["~ALL"], None),
+    ],
+)
+def test_ruleset_ambiguous_or_excluded_coverage_cannot_authorize_deploy(
+    monkeypatch, includes, excludes
+):
+    rule = {
+        "id": 1,
+        "target": "tag",
+        "enforcement": "active",
+        "bypass_actors": [],
+        "conditions": {"ref_name": {"include": includes, "exclude": excludes}},
+        "rules": [{"type": "update"}, {"type": "deletion"}],
+    }
+    monkeypatch.setattr(
+        deploy, "github_json", lambda p: [rule] if p.startswith("rulesets?") else rule
+    )
+    with pytest.raises(ValueError):
+        deploy.require_immutable_tag("logs-ai-deploy-" + "a" * 40)
+
+
+def test_git_specific_proxy_override_is_rejected_before_network(monkeypatch):
+    monkeypatch.setenv("DOKPLOY_TRANSPORT", "direct")
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
+    monkeypatch.setenv(
+        "GIT_CONFIG_KEY_0", "http.https://github.com/provedorconsult/logs-ai.git.proxy"
+    )
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", "http://untrusted.invalid:8080")
+    with pytest.raises(ValueError, match="conflicts"):
+        deploy.git_transport()

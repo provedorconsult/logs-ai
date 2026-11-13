@@ -4,8 +4,11 @@ import json
 import os
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
+
+from transport import approved_opener
 
 
 def require_deployment_receipt():
@@ -29,10 +32,23 @@ def require_deployment_receipt():
 
 def main():
     require_deployment_receipt()
-    url = os.environ["APP_TEST_URL"].rstrip("/") + "/health"
+    base = os.environ["APP_TEST_URL"]
+    parsed = urllib.parse.urlsplit(base)
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+        or parsed.path not in {"", "/"}
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError("APP_TEST_URL must be the exact application origin without credentials")
+    url = base.rstrip("/") + "/health"
+    opener = approved_opener()
     for _ in range(30):
         try:
-            with urllib.request.urlopen(url, timeout=4) as response:
+            with opener.open(url, timeout=4) as response:
                 expected = os.environ.get("EXPECTED_REVISION")
                 revision_matches = (
                     not expected or response.headers.get("X-App-Revision") == expected

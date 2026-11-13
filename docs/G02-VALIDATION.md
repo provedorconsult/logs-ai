@@ -5,6 +5,8 @@ Continuação via Dokploy após autorização de HTTP na Tailnet:
 [G02-DOKPLOY.md](G02-DOKPLOY.md). A atualização mais recente determina o estado vigente.
 Resposta ao parecer posterior de Hermes e correções A1–A5:
 [G02-CHECKER-FIXES.md](G02-CHECKER-FIXES.md).
+Resposta à reavaliação de `8fefce0`, achados B1–B6:
+[G02-CHECKER-B-FIXES.md](G02-CHECKER-B-FIXES.md).
 G02 permanece autorizada; este registro não constitui aceite independente.
 
 | Verificação | Resultado observado |

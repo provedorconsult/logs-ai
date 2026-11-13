@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import subprocess
 import threading
 import urllib.error
 from contextlib import contextmanager
@@ -14,7 +15,7 @@ spec.loader.exec_module(deploy)
 
 
 @contextmanager
-def listener(status=200, location=None):
+def listener(status=200, location=None, body=None, revision=None):
     received = []
 
     class Handler(BaseHTTPRequestHandler):
@@ -23,8 +24,15 @@ def listener(status=200, location=None):
             self.send_response(status)
             if location:
                 self.send_header("Location", location)
+            if revision:
+                self.send_header("X-App-Revision", revision)
             self.end_headers()
-            self.wfile.write(json.dumps({"ok": True}).encode())
+            self.wfile.write(json.dumps(body if body is not None else {"ok": True}).encode())
+
+        def do_CONNECT(self):
+            received.append((self.path, None))
+            self.send_response(403)
+            self.end_headers()
 
         def log_message(self, *args):
             pass
@@ -80,4 +88,44 @@ def test_redirect_never_forwards_token_to_another_origin(monkeypatch):
         with pytest.raises(urllib.error.HTTPError):
             deploy.api(target, "synthetic-key", "project.all")
         assert len(expected) == 1
+        assert leaked == []
+
+
+def test_git_direct_transport_does_not_connect_to_inherited_proxy(monkeypatch):
+    monkeypatch.setenv("DOKPLOY_TRANSPORT", "direct")
+    with listener() as (attacker, leaked), socket_target() as target:
+        monkeypatch.setenv("https_proxy", attacker)
+        monkeypatch.setenv("HTTPS_PROXY", attacker)
+        command, env = deploy.git_transport()
+        result = subprocess.run(
+            [*command, "ls-remote", target], env=env, capture_output=True, timeout=5
+        )
+        assert result.returncode != 0
+        assert leaked == []
+
+
+@contextmanager
+def socket_target():
+    import socket
+
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        # Reserved but not listening: direct Git fails locally without external access.
+        yield f"https://127.0.0.1:{sock.getsockname()[1]}/synthetic.git"
+
+
+def test_git_proxy_transport_uses_only_pinned_proxy(monkeypatch):
+    monkeypatch.setenv("DOKPLOY_TRANSPORT", "proxy")
+    with (
+        listener() as (approved, received),
+        listener() as (attacker, leaked),
+        socket_target() as target,
+    ):
+        monkeypatch.setenv("https_proxy", attacker)
+        monkeypatch.setenv("HTTPS_PROXY", attacker)
+        monkeypatch.setenv("NO_PROXY", "*")
+        monkeypatch.setenv("DOKPLOY_APPROVED_PROXY", approved)
+        command, env = deploy.git_transport()
+        subprocess.run([*command, "ls-remote", target], env=env, capture_output=True, timeout=5)
+        assert len(received) == 1
         assert leaked == []
