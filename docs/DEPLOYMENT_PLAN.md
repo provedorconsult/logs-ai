@@ -37,6 +37,11 @@ continuam sujeitas ao escopo e às restrições humanas aplicáveis. Mantenha os
 necessário. O acesso automatizado usa chave dedicada, OpenSSH não interativo e
 `RunSSH=false` no Tailscale.
 
+Atualização humana de 13/11/2026: acesso HTTP administrativo direto na Tailnet
+autorizado para o Dokploy e primeiro deploy G02, usando o token do ambiente.
+A exceção não autoriza alterações na configuração SSH, Tailscale ou perímetro.
+O cliente fixa a origem exata e recusa redirects; ver [G02.md](G02.md).
+
 Infraestrutura de referência informada: Debian 13, Docker 29.9.3 Swarm,
 Compose v5.7.1 e Dokploy v0.31.1.
 

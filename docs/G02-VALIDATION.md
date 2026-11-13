@@ -1,6 +1,8 @@
 # G02 — Registro de validação do Maker
 
-Data: 13/11/2026 (America/Sao_Paulo). Escopo: executor local desta implementação.
+Data: 13/11/2026 (America/Sao_Paulo). Os registros abaixo são históricos.
+Continuação via Dokploy após autorização de HTTP na Tailnet:
+[G02-DOKPLOY.md](G02-DOKPLOY.md). A atualização mais recente determina o estado vigente.
 G02 permanece autorizada; este registro não constitui aceite independente.
 
 | Verificação | Resultado observado |

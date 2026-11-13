@@ -32,6 +32,10 @@ A revisão independente deve ser realizada por quem não atuou como Maker.
 Para a API administrativa, usar túnel SSH validado ou HTTPS com certificado e
 hostname validados, dentro do caminho aprovado pelo responsável. HTTP direto
 no IP da Tailnet não é o padrão autorizado. A Tailnet não substitui esse gate.
+Exceção humana de 13/11/2026 para G02: HTTP administrativo direto na Tailnet foi
+explicitamente autorizado. O cliente exige `DOKPLOY_ALLOW_TAILNET_HTTP=true` e
+`DOKPLOY_TAILNET_HTTP_ORIGIN` igual à origem exata de `DOKPLOY_URL`, em hostname
+`.ts.net`; recusa redirects. A autorização não modifica a configuração SSH.
 O exemplo local pressupõe este túnel (expandir a chave com segurança no cliente):
 
 ```sh

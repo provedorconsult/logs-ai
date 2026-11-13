@@ -42,6 +42,12 @@ O `.env` local e as chaves privadas nunca são versionados. O `.env.example`
 contém apenas placeholders. Não imprima variáveis sensíveis, não ative shell
 tracing durante operações autenticadas e não inclua segredos em issues.
 
+Em 13/11/2026, o responsável autorizou explicitamente acesso administrativo
+HTTP direto pela Tailnet para usar `dokploy_token` no primeiro deploy G02.
+Essa decisão substitui a exigência de HTTPS/túnel apenas nesse caminho e escopo.
+Fixar a origem exata autorizada, recusar redirects e não enviar o token a outros
+hosts. Não altera as restrições sobre SSH, MikroTik ou configuração base da VPS.
+
 ## Checker (Hermes) e Devs Humanos
 
 Atuam em revisão pós-deploy diretamente no código versionado e no servidor de
