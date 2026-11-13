@@ -167,7 +167,7 @@ def test_deploy_rejects_wrong_resource_before_mutating(monkeypatch, field):
 def test_deployment_ref_published_once_without_force(monkeypatch, existing):
     url = "https://github.com/provedorconsult/logs-ai.git"
     responses = iter(["a" * 40, url, url, existing])
-    monkeypatch.setattr(deploy, "git_transport", lambda: (["git"], {}))
+    monkeypatch.setattr(deploy, "git_transport", lambda *a: (["git"], {}))
     monkeypatch.setattr(deploy.subprocess, "check_output", lambda *a, **k: next(responses))
     pushed = []
     monkeypatch.setattr(deploy.subprocess, "run", lambda args, **k: pushed.append(args))
@@ -185,7 +185,7 @@ def test_deployment_ref_published_once_without_force(monkeypatch, existing):
 def test_existing_deployment_ref_cannot_be_retargeted(monkeypatch):
     url = "https://github.com/provedorconsult/logs-ai.git"
     responses = iter(["a" * 40, url, url, "b" * 40])
-    monkeypatch.setattr(deploy, "git_transport", lambda: (["git"], {}))
+    monkeypatch.setattr(deploy, "git_transport", lambda *a: (["git"], {}))
     monkeypatch.setattr(deploy.subprocess, "check_output", lambda *a, **k: next(responses))
     with pytest.raises(ValueError, match="different commit"):
         deploy.publish_deployment_ref("a" * 40)
@@ -452,3 +452,47 @@ def test_git_specific_proxy_override_is_rejected_before_network(monkeypatch):
     monkeypatch.setenv("GIT_CONFIG_VALUE_0", "http://untrusted.invalid:8080")
     with pytest.raises(ValueError, match="conflicts"):
         deploy.git_transport()
+
+
+@pytest.mark.parametrize(
+    "fetch,push",
+    [
+        ("https://github.com/provedorconsult/logs-ai", deploy.GIT_ORIGIN),
+        (deploy.GIT_ORIGIN, "https://github.com/provedorconsult/logs-ai"),
+        (deploy.GIT_ORIGIN, "https://github.com:443/provedorconsult/logs-ai.git"),
+    ],
+)
+def test_noncanonical_git_origins_cannot_start_network(monkeypatch, fetch, push):
+    responses = iter(["a" * 40, fetch, push])
+    monkeypatch.setattr(deploy.subprocess, "check_output", lambda *a, **k: next(responses))
+    monkeypatch.setattr(
+        deploy, "git_transport", lambda *a: pytest.fail("Must reject before transport")
+    )
+    with pytest.raises(ValueError, match="canonical"):
+        deploy.publish_deployment_ref("a" * 40)
+
+
+@pytest.mark.parametrize("value", ["1", "true", "0", ""])
+@pytest.mark.parametrize("entrypoint", ["transport", "publish"])
+def test_inherited_tls_override_is_rejected_before_git(monkeypatch, value, entrypoint):
+    monkeypatch.setenv("DOKPLOY_TRANSPORT", "direct")
+    monkeypatch.setenv("GIT_SSL_NO_VERIFY", value)
+    monkeypatch.setattr(
+        deploy.subprocess, "check_output", lambda *a, **k: pytest.fail("No Git call")
+    )
+    with pytest.raises(ValueError, match="GIT_SSL_NO_VERIFY"):
+        if entrypoint == "transport":
+            deploy.git_transport()
+        else:
+            deploy.publish_deployment_ref("a" * 40)
+
+
+def test_effective_git_tls_configuration_cannot_disable_verification(monkeypatch):
+    monkeypatch.setenv("DOKPLOY_TRANSPORT", "direct")
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
+    monkeypatch.setenv(
+        "GIT_CONFIG_KEY_0", "http.https://github.com/provedorconsult/logs-ai.git.sslVerify"
+    )
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", "false")
+    with pytest.raises(ValueError, match="conflicts"):
+        deploy.git_transport(deploy.GIT_ORIGIN)

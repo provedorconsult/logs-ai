@@ -80,6 +80,10 @@ jobs:
       EXPECTED_REVISION: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
+      - name: Set canonical deployment origin
+        run: |
+          git remote set-url origin https://github.com/provedorconsult/logs-ai.git
+          git remote set-url --push origin https://github.com/provedorconsult/logs-ai.git
       - name: Materialize authoritative Compose environment
         env:
           DOKPLOY_ENV_SNAPSHOT: ${{ secrets.DOKPLOY_ENV_SNAPSHOT }}

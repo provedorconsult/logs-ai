@@ -1,5 +1,8 @@
 # G02 — Resposta à reavaliação de 8fefce0
 
+Registro histórico. A revisão posterior de `de83b95` encontrou duas lacunas
+adicionais em B6; resposta: [G02-CHECKER-B6-FIXES.md](G02-CHECKER-B6-FIXES.md).
+
 Data: 13/11/2026 (America/Sao_Paulo). Parecer recebido:
 `G02-CHECKER-REVISAO-8fefce0.md`, SHA-256
 `4ba83691d63b35d09266d5203d0edd558763bb550bafd3b5dd8000e7cfb8f3cf`.

@@ -16,6 +16,8 @@ from pathlib import Path
 from transport import NoRedirect as NoRedirect
 from transport import approved_opener, approved_proxy
 
+GIT_ORIGIN = "https://github.com/provedorconsult/logs-ai.git"
+
 
 def validate_url(value):
     url = urllib.parse.urlsplit(value)
@@ -195,7 +197,16 @@ def wait_deployment(base, token, compose_id, previous_ids, title, result):
     raise RuntimeError("Requested deployment timed out")
 
 
-def git_transport():
+def require_git_tls_environment():
+    if "GIT_SSL_NO_VERIFY" in os.environ:
+        raise ValueError("Inherited GIT_SSL_NO_VERIFY is forbidden")
+
+
+def git_transport(url=GIT_ORIGIN):
+    require_git_tls_environment()
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        raise ValueError("Git transport requires an HTTPS origin without credentials")
     proxy = approved_proxy() or ""
     env = {
         key: value
@@ -213,11 +224,27 @@ def git_transport():
         f"remote.origin.proxy={proxy}",
         "-c",
         "http.followRedirects=false",
+        "-c",
+        "http.sslVerify=true",
+        "-c",
+        "http.https://github.com.sslVerify=true",
     ]
-    url = "https://github.com/provedorconsult/logs-ai.git"
-    for key, expected in [("http.proxy", proxy), ("http.followRedirects", "false")]:
+    for key, expected in [
+        ("http.proxy", proxy),
+        ("http.followRedirects", "false"),
+        ("http.sslVerify", "true"),
+    ]:
         actual = subprocess.check_output(
-            [*command, "config", "--get-urlmatch", key, url], env=env, text=True
+            [
+                *command,
+                "config",
+                *([] if key == "http.proxy" else ["--type=bool"]),
+                "--get-urlmatch",
+                key,
+                url,
+            ],
+            env=env,
+            text=True,
         ).strip()
         if actual != expected:
             raise ValueError("Git URL-specific configuration conflicts with approved transport")
@@ -225,6 +252,7 @@ def git_transport():
 
 
 def publish_deployment_ref(revision):
+    require_git_tls_environment()
     if subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip() != revision:
         raise ValueError("Local checkout does not match EXPECTED_REVISION")
     for push in [False, True]:
@@ -232,21 +260,9 @@ def publish_deployment_ref(revision):
             ["git", "remote", "get-url", "--all", *(["--push"] if push else []), "origin"],
             text=True,
         ).splitlines()
-        if len(urls) != 1:
-            raise ValueError("Exactly one logs-ai fetch/push origin is required")
-        remote = urllib.parse.urlsplit(urls[0])
-        if (
-            remote.scheme != "https"
-            or remote.hostname != "github.com"
-            or remote.port not in {None, 443}
-            or remote.username
-            or remote.password
-            or remote.query
-            or remote.fragment
-            or remote.path not in {"/provedorconsult/logs-ai", "/provedorconsult/logs-ai.git"}
-        ):
-            raise ValueError("Deployment refs may only be published to logs-ai")
-    command, env = git_transport()
+        if urls != [GIT_ORIGIN]:
+            raise ValueError("Fetch and push must use the single canonical logs-ai .git URL")
+    command, env = git_transport(GIT_ORIGIN)
     tag = f"logs-ai-deploy-{revision}"
     ref = f"refs/tags/{tag}"
     existing = subprocess.check_output(
