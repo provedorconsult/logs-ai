@@ -1,10 +1,10 @@
 """Run against a dedicated disposable PostgreSQL database, never production."""
 
 import os
-from urllib.parse import urlsplit
 
 import psycopg
 import pytest
+from database_guard import validate_test_database
 from fastapi.testclient import TestClient
 
 from logs_ai.main import app
@@ -18,8 +18,7 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture(autouse=True)
 def database(monkeypatch):
     url = os.environ["TEST_DATABASE_URL"]
-    if not urlsplit(url).path.rstrip("/").endswith(("_ci", "_test")):
-        pytest.fail("TEST_DATABASE_URL must target a disposable database ending in _ci or _test")
+    validate_test_database(url)
     monkeypatch.setenv("DATABASE_URL", url)
     with psycopg.connect(url) as conn:
         conn.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")

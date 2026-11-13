@@ -54,6 +54,10 @@ Para HTTPS, rejeitar certificados inválidos; nunca usar `-k` ou equivalente.
 O cliente deve rejeitar redirecionamentos e destinos fora do caminho aprovado,
 ler o token do ambiente e enviá-lo apenas no header exigido pela API, sem
 colocá-lo na URL, argumentos ou logs. Desativar tracing e logs de headers.
+Fixar também o transporte (`DOKPLOY_TRANSPORT` e, quando aplicável,
+`DOKPLOY_APPROVED_PROXY`); um proxy herdado não é prova de confiança. No runtime
+Cloud, usar o proxy gerenciado aprovado, conforme suas instruções. O cliente
+recusa transporte implícito e redirects.
 
 ## Checklist pós-deploy
 

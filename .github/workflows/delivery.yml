@@ -25,6 +25,8 @@ jobs:
           --health-interval 5s --health-timeout 3s --health-retries 12
     env:
       TEST_DATABASE_URL: postgresql://logs_ai:disposable_ci_only@127.0.0.1:5432/logs_ai_ci
+      TEST_DATABASE_DISPOSABLE: 'true'
+      TEST_DATABASE_EXPECTED_PORT: '5432'
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -68,6 +70,10 @@ jobs:
       DOKPLOY_API_CONTRACT_VERIFIED: ${{ vars.DOKPLOY_API_CONTRACT_VERIFIED }}
       DOKPLOY_ALLOW_TAILNET_HTTP: ${{ vars.DOKPLOY_ALLOW_TAILNET_HTTP }}
       DOKPLOY_TAILNET_HTTP_ORIGIN: ${{ vars.DOKPLOY_TAILNET_HTTP_ORIGIN }}
+      DOKPLOY_TRANSPORT: ${{ vars.DOKPLOY_TRANSPORT }}
+      DOKPLOY_APPROVED_PROXY: ${{ vars.DOKPLOY_APPROVED_PROXY }}
+      DOKPLOY_DEPLOYMENT_RECEIPT: work/dokploy-deployment.json
+      GITHUB_TOKEN: ${{ github.token }}
       APP_TEST_URL: ${{ vars.APP_TEST_URL }}
       EXPECTED_REVISION: ${{ github.sha }}
     steps:

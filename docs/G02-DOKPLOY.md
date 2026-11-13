@@ -1,5 +1,8 @@
 # G02 — Primeiro deploy via Dokploy
 
+Registro histórico. Correções posteriores ao parecer de Hermes:
+[G02-CHECKER-FIXES.md](G02-CHECKER-FIXES.md).
+
 Data: 13/11/2026 (America/Sao_Paulo). Registro do Maker; aceite independente
 permanece com Hermes e Devs Humanos. G01 continua `NOT_ESTABLISHED`.
 

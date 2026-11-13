@@ -5,9 +5,30 @@ import os
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
+
+
+def require_deployment_receipt():
+    path = os.environ.get("DOKPLOY_DEPLOYMENT_RECEIPT")
+    if not path and os.environ.get("DOKPLOY_COMPOSE_ID"):
+        path = "work/dokploy-deployment.json"
+    if path:
+        with Path(path).open() as file:
+            receipt = json.load(file)
+        if (
+            receipt.get("status") != "done"
+            or not receipt.get("deploymentId")
+            or not receipt.get("requestTitle")
+            or not os.environ.get("EXPECTED_REVISION")
+            or receipt.get("revision") != os.environ["EXPECTED_REVISION"]
+            or not os.environ.get("DOKPLOY_COMPOSE_ID")
+            or receipt.get("composeId") != os.environ["DOKPLOY_COMPOSE_ID"]
+        ):
+            raise ValueError("A completed deployment receipt matching this release is required")
 
 
 def main():
+    require_deployment_receipt()
     url = os.environ["APP_TEST_URL"].rstrip("/") + "/health"
     for _ in range(30):
         try:
