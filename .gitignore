@@ -1,0 +1,23 @@
+# Credenciais e ambientes locais
+.env
+.env.*
+!.env.example
+
+# Chaves privadas e identidades SSH
+*.pem
+*.key
+id_ed25519*
+
+# Arquivos temporários, backups e caches
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+*.bak
+.tmp/
+tmp/
+temp/
+.cache/
+.DS_Store
+Thumbs.db
