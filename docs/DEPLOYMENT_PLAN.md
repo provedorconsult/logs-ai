@@ -13,9 +13,11 @@ Estas condições são premissas operacionais fornecidas, não verificações re
 pela criação deste plano. O bootstrap foi informado como concluído/ativo, mas
 `G01_OVERALL=NOT_ESTABLISHED`: persistência, recuperação e validações funcionais
 ainda dependem de evidências revisadas e aprovação integral.
-`G02_AUTHORIZED=NO`; as fases seguintes são planejamento, sem autorização de
-execução. Mudanças remotas exigem diagnóstico, aprovação prévia do responsável
-e validação antes de avançar. Mantenha os segredos fora do Git e renove-os quando
+`G02_AUTHORIZED=YES` por decisão humana explícita de 13/11/2026. Essa decisão
+permite iniciar G02 sem aprovação integral prévia da G01; não aprova os testes
+pendentes nem associa automaticamente G02 à Fase 2. A decisão da equipe humana
+prevalece sobre os gates documentais no escopo autorizado. Mudanças remotas
+continuam sujeitas ao escopo e às restrições humanas aplicáveis. Mantenha os segredos fora do Git e renove-os quando
 necessário. O acesso automatizado usa chave dedicada, OpenSSH não interativo e
 `RunSSH=false` no Tailscale.
 
@@ -24,7 +26,7 @@ Compose v5.7.1 e Dokploy v0.31.1.
 
 A consolidação da evidência e as pendências para Debian 13 estão em
 [G01-DEBIAN13-REVIEW.md](G01-DEBIAN13-REVIEW.md). A próxima etapa é preparar
-a validação final da G01, sujeita aos gates vigentes.
+a validação final da G01 em paralelo ao avanço autorizado de G02.
 
 ## Fase 1 — Fundação & Core Pipeline
 

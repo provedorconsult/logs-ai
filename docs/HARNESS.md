@@ -23,8 +23,10 @@ Não usar prompt de senha nem desabilitar verificação de host.
 ## Gates e transporte administrativo antes de operar
 
 Confirmar os gates de [AGENTS.md](../AGENTS.md). G01 permanece
-`NOT_ESTABLISHED` e G02 não está autorizada. Não executar alterações remotas ou
-rollback fora do escopo aprovado; obter aprovação prévia para o plano concreto.
+`NOT_ESTABLISHED`; G02 está autorizada por decisão humana de 13/11/2026, que
+prevalece sobre o bloqueio documental anterior. Isso não aprova tecnicamente G01.
+Não executar alterações remotas ou rollback fora do escopo humano aprovado;
+respeitar as restrições específicas vigentes para VPS e MikroTik.
 A revisão independente deve ser realizada por quem não atuou como Maker.
 
 Para a API administrativa, usar túnel SSH validado ou HTTPS com certificado e

@@ -50,6 +50,14 @@ A ordem de execução final deve respeitar dependências, riscos e escopo aprova
 esta lista não autoriza reinícios, mudanças de firewall ou restaurações.
 Consultar também [HARNESS.md](HARNESS.md).
 
+## Atualização de governança — 13/11/2026
+
+Após este parecer, o responsável declarou “G02 autorizada”. A decisão humana
+prevalece sobre o bloqueio anterior e permite avançar G02 com as pendências de
+G01 ainda abertas. Não altera os resultados históricos nem estabelece aprovação
+integral da G01. O estado abaixo foi atualizado para refletir essa autorização;
+a validação final de G01 permanece necessária em paralelo.
+
 ## Parecer e limites
 
 Os registros sustentam a correção pontual de SSH relatada, mas não estabelecem
@@ -62,6 +70,6 @@ REVIEW_TYPE=DOCUMENTARY_ONLY
 CHECKER_INDEPENDENCE=NOT_ESTABLISHED
 G01_FIX=PASS_REPORTED
 G01_OVERALL=NOT_ESTABLISHED
-G02_AUTHORIZED=NO
-NEXT_ACTION=G01_FINAL_VALIDATION
+G02_AUTHORIZED=YES
+NEXT_ACTION=G02_AUTHORIZED_WITH_G01_VALIDATION_PENDING
 ```

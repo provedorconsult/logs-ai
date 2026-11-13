@@ -6,12 +6,22 @@ Entregas pequenas e frequentes seguem o fluxo: desenvolver, testar localmente,
 auditar o diff, versionar, validar os gates, integrar, implantar e verificar após o deploy.
 Cada implantação deve ser rastreável ao hash do commit e à imagem implantada.
 
+## Regra principal: decisão da equipe humana
+
+As decisões explícitas da equipe humana responsável são a regra principal
+desta governança e prevalecem sobre planos, gates e recomendações operacionais
+do repositório. A decisão humana mais recente substitui regras anteriores no
+escopo indicado, sem exigir nova aprovação do que já foi autorizado. Registrar
+a decisão, data, escopo e exceções na documentação para manter rastreabilidade.
+Autorização humana é uma decisão operacional; não transforma evidência ausente
+em teste aprovado nem elimina o dever de relatar riscos e resultados com precisão.
+
 ## Maker (Codex)
 
 O Maker tem autonomia para desenvolver código, executar testes locais e realizar
 commits. Merge, publicação e deploy devem respeitar o escopo autorizado e os
-gates abaixo. A autorização desta correção documental cobre commit e push dos
-cinco arquivos de governança em `main`; não autoriza deploy nem infraestrutura.
+gates abaixo e as decisões humanas vigentes. A atualização documental atual
+inclui commit e push em `main`; sua execução não realiza mudanças na infraestrutura.
 Antes de publicar, execute os testes aplicáveis e audite os arquivos staged para
 impedir inclusão de credenciais ou alterações alheias à entrega.
 
@@ -50,11 +60,11 @@ backups e um caminho de recuperação testável.
 
 ## Gates G01/G02 e decisão de governança
 
-Estado vigente após o parecer sobre `eb7c051a6fe6d3ccae9e682090ee864e95108090`:
+Estado vigente após autorização explícita do responsável humano em 13/11/2026:
 
 ```ini
 G01_OVERALL=NOT_ESTABLISHED
-G02_AUTHORIZED=NO
+G02_AUTHORIZED=YES
 CHECKER_INDEPENDENCE=NOT_ESTABLISHED
 ```
 
@@ -65,14 +75,17 @@ A aprovação integral depende de revisão das evidências de persistência,
 recuperação e funcionamento pelo Checker independente e responsável humano.
 Bootstrap informado e publicação de documentação não satisfazem esse gate.
 
-Para G02, exigir G01 aprovada, autorização explícita de início e escopo, testes
-aplicáveis aprovados, transporte administrativo validado e plano de rollback
-compatível com migrations. Enquanto isso, não iniciar G02 nem alterar a
-infraestrutura com base neste documento.
+Para G02, a decisão humana de 13/11/2026, “G02 autorizada”, autoriza o avanço
+e substitui a exigência anterior de aprovação integral da G01 como condição
+para iniciar G02. As pendências de G01 continuam registradas e devem ser
+acompanhadas; não constituem bloqueio automático ao início autorizado.
+Não se presume que G02 corresponda à Fase 2 deste plano apenas pela numeração.
+A execução deve respeitar o escopo solicitado, os testes aplicáveis, transporte
+administrativo validado e recuperação compatível com migrations. A autorização
+de G02 não implica autorização irrestrita para VPS, MikroTik ou ações destrutivas;
+instruções humanas específicas sobre esses recursos continuam vigentes.
 
-A autonomia irrestrita e revisão somente pós-deploy descritas no commit anterior
-ficam substituídas por estes gates. Uma futura adoção desse modelo exige decisão
-explícita do responsável, versionada com escopo, ambientes, gates substituídos,
-condições de ativação e evidência da aprovação. A revisão pós-deploy complementa
-os gates vigentes. Um agente que atuou como Maker não comprova independência
-como Checker da própria entrega.
+A revisão pós-deploy complementa a decisão humana e os controles aplicáveis.
+Um agente que atuou como Maker não comprova independência como Checker da
+própria entrega. Mudanças futuras de modelo devem registrar a decisão humana
+e seu escopo, mantendo a distinção entre autorização e aprovação técnica.
