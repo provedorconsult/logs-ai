@@ -1,0 +1,47 @@
+name: logs-ai
+services:
+  app:
+    image: ${APP_IMAGE:-logs-ai:local}
+    build:
+      context: .
+      args:
+        APP_REVISION: ${APP_REVISION:-unknown}
+    environment:
+      DATABASE_URL: postgresql://logs_ai:${POSTGRES_PASSWORD:?configure POSTGRES_PASSWORD}@postgres:5432/logs_ai_test
+    ports:
+      - "${APP_BIND_HOST:-127.0.0.1}:${APP_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: logs_ai_test
+      POSTGRES_USER: logs_ai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?configure POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logs_ai -d logs_ai_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+volumes:
+  postgres_data:

@@ -1,0 +1,71 @@
+name: delivery
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: delivery-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: logs_ai
+          POSTGRES_PASSWORD: disposable_ci_only
+          POSTGRES_DB: logs_ai_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U logs_ai -d logs_ai_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 12
+    env:
+      TEST_DATABASE_URL: postgresql://logs_ai:disposable_ci_only@127.0.0.1:5432/logs_ai_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.6'
+      - run: uv sync --locked --python 3.12
+      - run: uv run --no-sync ruff check .
+      - run: uv run --no-sync ruff format --check .
+      - run: uv run --no-sync pytest -q
+      - run: uv export --locked --no-dev --no-emit-project --format requirements-txt | diff requirements.txt -
+      - run: docker build --build-arg APP_REVISION=${{ github.sha }} -t logs-ai:${{ github.sha }} .
+      - name: Compose readiness
+        env:
+          APP_IMAGE: logs-ai:${{ github.sha }}
+          POSTGRES_PASSWORD: disposable_ci_only
+          APP_PORT: '18000'
+        run: docker compose -p logs-ai-smoke up -d --no-build --wait --wait-timeout 120
+      - name: HTTP readiness
+        env:
+          APP_TEST_URL: http://127.0.0.1:18000
+          EXPECTED_REVISION: ${{ github.sha }}
+        run: python3 scripts/check_health.py
+      - name: Clean disposable Compose stack
+        if: always()
+        env:
+          POSTGRES_PASSWORD: disposable_ci_only
+        run: docker compose -p logs-ai-smoke down -v
+  deploy:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.ENABLE_DOKPLOY_CD == 'true'
+    runs-on: [self-hosted, logs-ai-deploy]
+    environment: homologacao
+    env:
+      DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
+      DOKPLOY_COMPOSE_ID: ${{ vars.DOKPLOY_COMPOSE_ID }}
+      DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
+      DOKPLOY_SSH_TUNNEL_VERIFIED: ${{ vars.DOKPLOY_SSH_TUNNEL_VERIFIED }}
+      DOKPLOY_API_CONTRACT_VERIFIED: ${{ vars.DOKPLOY_API_CONTRACT_VERIFIED }}
+      APP_TEST_URL: ${{ vars.APP_TEST_URL }}
+      EXPECTED_REVISION: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/deploy.py
+      - run: python3 scripts/check_health.py

@@ -46,6 +46,10 @@ a validação final da G01 em paralelo ao avanço autorizado de G02.
 
 ## Fase 1 — Fundação & Core Pipeline
 
+Implementação e configuração operacional: [G02.md](G02.md). A equipe humana
+confirmou a execução imediata da G02; aceite remoto continua dependente da
+validação pós-deploy, sem aprovação implícita de G01.
+
 Criar estrutura base, gerenciamento de dependências e linter, `Dockerfile`
 multi-stage, `docker-compose.yml` de homologação,
 PostgreSQL, migrations automatizadas e endpoint `/health` que verifica ativamente

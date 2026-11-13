@@ -20,8 +20,9 @@ em teste aprovado nem elimina o dever de relatar riscos e resultados com precis�
 
 O Maker tem autonomia para desenvolver código, executar testes locais e realizar
 commits. Merge, publicação e deploy devem respeitar o escopo autorizado e os
-gates abaixo e as decisões humanas vigentes. A atualização documental atual
-inclui commit e push em `main`; sua execução não realiza mudanças na infraestrutura.
+gates abaixo e as decisões humanas vigentes. G02 está autorizada para implementação e primeiro deploy da aplicação via
+Dokploy por confirmação humana, mantendo as restrições de perímetro e a G01
+pendente. Não alterar MikroTik ou configuração base da VPS nesta entrega.
 Antes de publicar, execute os testes aplicáveis e audite os arquivos staged para
 impedir inclusão de credenciais ou alterações alheias à entrega.
 

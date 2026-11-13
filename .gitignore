@@ -27,3 +27,13 @@ temp/
 Thumbs.db
 
 # Nomes arbitrários exigem auditoria de conteúdo; ignore não protege arquivos rastreados.
+
+# Python e saídas de validação
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+dist/
+*.egg-info/
+work/
