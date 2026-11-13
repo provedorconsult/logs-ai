@@ -53,6 +53,8 @@ jobs:
           POSTGRES_PASSWORD: disposable_ci_only
         run: docker compose -p logs-ai-smoke down -v
   deploy:
+    permissions:
+      contents: write
     needs: verify
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.ENABLE_DOKPLOY_CD == 'true'
     runs-on: [self-hosted, logs-ai-deploy]

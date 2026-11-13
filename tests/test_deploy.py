@@ -95,6 +95,7 @@ def test_deploy_guards_source_and_preserves_database_secret(monkeypatch, source)
             return "docker compose -p logs-ai --env-file .env up -d --build"
 
     monkeypatch.setattr(deploy, "api", api)
+    monkeypatch.setattr(deploy, "publish_deployment_ref", lambda sha: "logs-ai-deploy-" + sha)
     deploy.deploy()
     assert [route for route, _ in calls] == [
         "compose.one",
@@ -104,7 +105,10 @@ def test_deploy_guards_source_and_preserves_database_secret(monkeypatch, source)
         "compose.deploy",
     ]
     command = calls[2][1]["command"]
-    assert command.startswith('test "$(git rev-parse HEAD)" = ' + "a" * 40 + " && ")
+    assert command == "docker compose -p logs-ai --env-file .env up -d --build"
+    assert calls[2][1]["branch" if source == "github" else "customGitBranch"] == (
+        "logs-ai-deploy-" + "a" * 40
+    )
     environment = calls[3][1]["env"]
     assert "POSTGRES_PASSWORD=test-only-password\n" in environment
     assert "APP_REVISION=" + "a" * 40 in environment
@@ -131,3 +135,27 @@ def test_deploy_rejects_wrong_resource_before_mutating(monkeypatch, field):
     with pytest.raises(ValueError):
         deploy.deploy()
     assert calls == ["compose.one"]
+
+
+@pytest.mark.parametrize("existing", ["", "a" * 40 + "\trefs/tags/test"])
+def test_deployment_ref_published_once_without_force(monkeypatch, existing):
+    responses = iter(["a" * 40, "https://github.com/provedorconsult/logs-ai.git", existing])
+    monkeypatch.setattr(deploy.subprocess, "check_output", lambda *a, **k: next(responses))
+    pushed = []
+    monkeypatch.setattr(deploy.subprocess, "run", lambda args, **k: pushed.append(args))
+    assert deploy.publish_deployment_ref("a" * 40) == "logs-ai-deploy-" + "a" * 40
+    assert len(pushed) == (0 if existing else 1)
+    if pushed:
+        assert pushed[0] == [
+            "git",
+            "push",
+            "origin",
+            "a" * 40 + ":refs/tags/logs-ai-deploy-" + "a" * 40,
+        ]
+
+
+def test_existing_deployment_ref_cannot_be_retargeted(monkeypatch):
+    responses = iter(["a" * 40, "https://github.com/provedorconsult/logs-ai.git", "b" * 40])
+    monkeypatch.setattr(deploy.subprocess, "check_output", lambda *a, **k: next(responses))
+    with pytest.raises(ValueError, match="different commit"):
+        deploy.publish_deployment_ref("a" * 40)

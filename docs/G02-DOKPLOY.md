@@ -44,17 +44,25 @@ não comprovam CD ativa.
 
 O cliente aceita HTTP somente para origem Tailnet exata explicitamente
 habilitada, valida projeto e origem Git/GitHub e exige SHA completo. Preserva
-segredos e atualiza revisão/imagem; o comando remoto verifica o HEAD real antes
-do build para impedir revisão incorreta se `main` avançar. Os contratos adicionais
-foram conferidos no OpenAPI desta instância. Ruff e 23 testes com PostgreSQL real
-passaram. Uma execução inicial ocorreu antes da prontidão do banco descartável
+segredos e atualiza revisão/imagem. Publica uma tag exclusiva por SHA, sem força,
+e configura essa referência na fonte do Dokploy para impedir troca de código
+se `main` avançar. Os contratos adicionais foram conferidos no OpenAPI desta
+instância. Ruff e os testes com PostgreSQL real passaram (resultado final abaixo).
+Uma execução inicial ocorreu antes da prontidão do banco descartável
 e falhou na conexão; após `pg_isready`, a suíte passou integralmente.
 
 ## Estado desta publicação
 
-Recursos provisionados; build/deploy ainda não solicitados. Publicar o código,
-observar o CI desse SHA, executar `scripts/deploy.py` com a configuração segura
-e registrar abaixo os resultados remotos. Provisionamento não equivale a deploy.
+O SHA `08de04d6f4f20d18dfe7acdc1eccadbb7519c7b9` foi publicado; o run
+`43453074099` aprovou `verify` e pulou `deploy`. O pedido manual
+`4OMs8W7EKtwdZvQ4RuzKF` clonou o repositório, mas falhou antes do build:
+`Invalid characters in compose command: shell control characters are not allowed`.
+Nenhum contêiner da aplicação foi criado nesse pedido. A estratégia inicial de
+comando com verificação de HEAD foi substituída pela tag Git por SHA e comando
+Compose padrão, respeitando a validação da instância.
+
+Publicar a correção, observar seu CI e repetir o deploy. Pedido aceito pela API
+não constitui aplicação saudável; resultados remotos serão registrados abaixo.
 
 CD automática ainda depende de runner e variáveis/secret no GitHub. A conexão
 GitHub disponível declara `push=true`, `admin=false`; isso não estabelece

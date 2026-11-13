@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.error
 import urllib.parse
@@ -67,6 +68,33 @@ def revision_environment(value, revision):
     return "\n".join([*lines, f"APP_REVISION={revision}", f"APP_IMAGE=logs-ai:{revision}", ""])
 
 
+def publish_deployment_ref(revision):
+    if subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip() != revision:
+        raise ValueError("Local checkout does not match EXPECTED_REVISION")
+    remote = urllib.parse.urlsplit(
+        subprocess.check_output(["git", "remote", "get-url", "origin"], text=True).strip()
+    )
+    if remote.hostname != "github.com" or remote.path not in {
+        "/provedorconsult/logs-ai",
+        "/provedorconsult/logs-ai.git",
+    }:
+        raise ValueError("Deployment refs may only be published to logs-ai")
+    tag = f"logs-ai-deploy-{revision}"
+    ref = f"refs/tags/{tag}"
+    existing = subprocess.check_output(["git", "ls-remote", "origin", ref], text=True).strip()
+    if existing:
+        if existing.split()[0] != revision:
+            raise ValueError("Deployment ref already points to a different commit")
+    else:
+        # Never overwrite a deployment ref, including on retry.
+        subprocess.run(
+            ["git", "push", "origin", f"{revision}:{ref}"],
+            check=True,
+            capture_output=True,
+        )
+    return tag
+
+
 def deploy():
     base = validate_url(os.environ["DOKPLOY_URL"])
     token = os.environ.get("DOKPLOY_API_TOKEN") or os.environ["dokploy_token"]
@@ -80,21 +108,23 @@ def deploy():
         raise ValueError("EXPECTED_REVISION must be a full Git SHA")
     project_id = os.environ["DOKPLOY_PROJECT_ID"]
     compose = api(base, token, "compose.one", query={"composeId": compose_id})
+    branch_field = "branch" if compose.get("sourceType") == "github" else "customGitBranch"
+    branch = compose.get(branch_field) or ""
+    branch_matches = branch == "main" or bool(re.fullmatch(r"logs-ai-deploy-[0-9a-f]{40}", branch))
     source_matches = (
         compose.get("sourceType") == "git"
         and compose.get("customGitUrl") == "https://github.com/provedorconsult/logs-ai.git"
-        and compose.get("customGitBranch") == "main"
     ) or (
         compose.get("sourceType") == "github"
         and compose.get("owner") == "provedorconsult"
         and compose.get("repository") == "logs-ai"
-        and compose.get("branch") == "main"
         and bool(compose.get("githubId"))
     )
     if (
         not project_id
         or compose.get("environment", {}).get("projectId") != project_id
         or not source_matches
+        or not branch_matches
         or compose.get("composeType") != "docker-compose"
         or compose.get("composePath") != "docker-compose.yml"
         or compose.get("autoDeploy")
@@ -103,13 +133,12 @@ def deploy():
     command = api(base, token, "compose.getDefaultCommand", query={"composeId": compose_id})
     if not isinstance(command, str) or not command.startswith("docker compose "):
         raise ValueError("Unexpected Dokploy Compose command")
-    # Abort before building if main advanced after CI. The label must describe actual source.
-    command = f'test "$(git rev-parse HEAD)" = {revision} && {command}'
+    tag = publish_deployment_ref(revision)
     api(
         base,
         token,
         "compose.update",
-        {"composeId": compose_id, "command": command},
+        {"composeId": compose_id, "command": command, branch_field: tag},
     )
     api(
         base,
@@ -124,6 +153,12 @@ def deploy():
 if __name__ == "__main__":
     try:
         deploy()
-    except (KeyError, ValueError, urllib.error.URLError, RuntimeError):
+    except (
+        KeyError,
+        ValueError,
+        urllib.error.URLError,
+        RuntimeError,
+        subprocess.CalledProcessError,
+    ):
         print("Deploy failed: verify configuration, transport and API contract", file=sys.stderr)
         sys.exit(1)
