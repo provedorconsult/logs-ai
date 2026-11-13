@@ -58,6 +58,22 @@ identifique a última versão saudável e a compatibilidade das migrations.
 Rollback da aplicação não desfaz automaticamente mudanças no banco; preserve
 backups e um caminho de recuperação testável.
 
+## Correspondência oficial entre gates e fases
+
+| Gate | Fase | Escopo principal |
+| --- | --- | --- |
+| G01 | Fase 0 — Setup & Bootstrap | Debian 13, Tailscale com `RunSSH=false`, Docker Swarm, Dokploy, rotação de credenciais e auditoria independente (`G01_FINAL_VALIDATION`). |
+| G02 | Fase 1 — Fundação & Core Pipeline | Estrutura, dependências/linter, Dockerfile multi-stage, Compose de homologação, PostgreSQL, migrations, `/health` ativo para app e banco e primeiro deploy no Dokploy. |
+| G03 | Fase 2 — Motor de Ingestão e IA | Coleta/parsing, análise por LLM e classificação de anomalias. |
+| G04 | Fase 3 — Interface, Alertas e API | Dashboard, API de consulta, webhooks, controle de acesso e testes E2E de homologação. |
+| G05 | Fase 4 — Hardening & Go-Live | Perímetro/MikroTik/firewall, porta 3000 restrita à Tailnet, desativação de senha SSH, backups e auditoria final. |
+
+O mapeamento define escopo; não constitui aprovação técnica dos gates. Os dados
+de infraestrutura fornecidos continuam sujeitos à validação independente.
+Para G02, o ciclo de entrega inclui commit, integração/merge quando houver branch
+de trabalho, deploy pelo Codex via Dokploy e validação pós-deploy pelo Hermes e
+Devs Humanos no servidor de testes. Deploy não equivale a aceite do Checker.
+
 ## Gates G01/G02 e decisão de governança
 
 Estado vigente após autorização explícita do responsável humano em 13/11/2026:
@@ -79,7 +95,7 @@ Para G02, a decisão humana de 13/11/2026, “G02 autorizada”, autoriza o avan
 e substitui a exigência anterior de aprovação integral da G01 como condição
 para iniciar G02. As pendências de G01 continuam registradas e devem ser
 acompanhadas; não constituem bloqueio automático ao início autorizado.
-Não se presume que G02 corresponda à Fase 2 deste plano apenas pela numeração.
+G02 corresponde oficialmente à Fase 1 — Fundação & Core Pipeline.
 A execução deve respeitar o escopo solicitado, os testes aplicáveis, transporte
 administrativo validado e recuperação compatível com migrations. A autorização
 de G02 não implica autorização irrestrita para VPS, MikroTik ou ações destrutivas;

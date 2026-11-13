@@ -5,6 +5,22 @@ O fluxo é Continuous Delivery sujeito aos gates pré-deploy de
 Cada fase entrega incrementos rastreáveis por
 commit, com verificação conforme [HARNESS.md](HARNESS.md).
 
+## Correspondência oficial entre gates e fases
+
+| Gate | Fase | Escopo principal |
+| --- | --- | --- |
+| G01 | Fase 0 — Setup & Bootstrap | Debian 13, Tailscale com `RunSSH=false`, Docker Swarm, Dokploy, rotação de credenciais e auditoria independente (`G01_FINAL_VALIDATION`). |
+| G02 | Fase 1 — Fundação & Core Pipeline | Estrutura, dependências/linter, Dockerfile multi-stage, Compose de homologação, PostgreSQL, migrations, `/health` ativo para app e banco e primeiro deploy no Dokploy. |
+| G03 | Fase 2 — Motor de Ingestão e IA | Coleta/parsing, análise por LLM e classificação de anomalias. |
+| G04 | Fase 3 — Interface, Alertas e API | Dashboard, API de consulta, webhooks, controle de acesso e testes E2E de homologação. |
+| G05 | Fase 4 — Hardening & Go-Live | Perímetro/MikroTik/firewall, porta 3000 restrita à Tailnet, desativação de senha SSH, backups e auditoria final. |
+
+O mapeamento define escopo; não constitui aprovação técnica dos gates. Os dados
+de infraestrutura fornecidos continuam sujeitos à validação independente.
+Para G02, o ciclo de entrega inclui commit, integração/merge quando houver branch
+de trabalho, deploy pelo Codex via Dokploy e validação pós-deploy pelo Hermes e
+Devs Humanos no servidor de testes. Deploy não equivale a aceite do Checker.
+
 ## Fase 0 — Bootstrap informado; G01 não aprovada
 
 Conforme o estado informado pelo responsável: rotação de senha realizada,
@@ -15,7 +31,7 @@ pela criação deste plano. O bootstrap foi informado como concluído/ativo, mas
 ainda dependem de evidências revisadas e aprovação integral.
 `G02_AUTHORIZED=YES` por decisão humana explícita de 13/11/2026. Essa decisão
 permite iniciar G02 sem aprovação integral prévia da G01; não aprova os testes
-pendentes nem associa automaticamente G02 à Fase 2. A decisão da equipe humana
+pendentes. G02 corresponde à Fase 1 conforme a matriz oficial. A decisão humana
 prevalece sobre os gates documentais no escopo autorizado. Mudanças remotas
 continuam sujeitas ao escopo e às restrições humanas aplicáveis. Mantenha os segredos fora do Git e renove-os quando
 necessário. O acesso automatizado usa chave dedicada, OpenSSH não interativo e
@@ -30,8 +46,10 @@ a validação final da G01 em paralelo ao avanço autorizado de G02.
 
 ## Fase 1 — Fundação & Core Pipeline
 
-Criar estrutura base, `Dockerfile`, `docker-compose.yml` de homologação,
-migrations e endpoint `/health`. Configurar build e deploy ativo no Dokploy,
+Criar estrutura base, gerenciamento de dependências e linter, `Dockerfile`
+multi-stage, `docker-compose.yml` de homologação,
+PostgreSQL, migrations automatizadas e endpoint `/health` que verifica ativamente
+a aplicação e a conectividade com o banco. Configurar build e deploy ativo no Dokploy,
 com variáveis protegidas, volumes persistentes e imagem vinculada ao commit.
 Critério de saída: deploy reproduzível, migrations aplicadas, banco saudável,
 serviços nas réplicas desejadas e `/health` respondendo com sucesso.
