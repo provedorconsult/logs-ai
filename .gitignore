@@ -7,6 +7,10 @@
 *.pem
 *.key
 id_ed25519*
+id_rsa*
+id_ecdsa*
+id_dsa*
+id_sk*
 
 # Arquivos temporários, backups e caches
 *.tmp
@@ -21,3 +25,5 @@ temp/
 .cache/
 .DS_Store
 Thumbs.db
+
+# Nomes arbitrários exigem auditoria de conteúdo; ignore não protege arquivos rastreados.

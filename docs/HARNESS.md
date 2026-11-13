@@ -20,6 +20,35 @@ Acessar via OpenSSH pela Tailnet com chave dedicada, `BatchMode=yes`,
 `IdentitiesOnly=yes` e verificação da chave do host; Tailscale `RunSSH=false`.
 Não usar prompt de senha nem desabilitar verificação de host.
 
+## Gates e transporte administrativo antes de operar
+
+Confirmar os gates de [AGENTS.md](../AGENTS.md). G01 permanece
+`NOT_ESTABLISHED` e G02 não está autorizada. Não executar alterações remotas ou
+rollback fora do escopo aprovado; obter aprovação prévia para o plano concreto.
+A revisão independente deve ser realizada por quem não atuou como Maker.
+
+Para a API administrativa, usar túnel SSH validado ou HTTPS com certificado e
+hostname validados, dentro do caminho aprovado pelo responsável. HTTP direto
+no IP da Tailnet não é o padrão autorizado. A Tailnet não substitui esse gate.
+O exemplo local pressupõe este túnel (expandir a chave com segurança no cliente):
+
+```sh
+ssh -N -T -o BatchMode=yes -o IdentitiesOnly=yes \
+  -o StrictHostKeyChecking=yes -o ExitOnForwardFailure=yes \
+  -i "$TEST_SERVER_SSH_KEY_PATH" \
+  -L 127.0.0.1:13000:127.0.0.1:3000 \
+  "$TEST_SERVER_USER@$TEST_SERVER_HOST"
+```
+
+O carregador deve expandir `~/` no caminho da chave; o shell não faz isso em
+uma variável entre aspas. Executar o túnel em sessão dedicada e verificar sua
+identidade, destino e disponibilidade antes de enviar tokens. Usar
+`DOKPLOY_URL=http://127.0.0.1:13000` somente enquanto o túnel estiver ativo.
+Para HTTPS, rejeitar certificados inválidos; nunca usar `-k` ou equivalente.
+O cliente deve rejeitar redirecionamentos e destinos fora do caminho aprovado,
+ler o token do ambiente e enviá-lo apenas no header exigido pela API, sem
+colocá-lo na URL, argumentos ou logs. Desativar tracing e logs de headers.
+
 ## Checklist pós-deploy
 
 - [ ] Conferir se o commit e a imagem implantados correspondem à entrega.
@@ -59,6 +88,7 @@ Não usar prompt de senha nem desabilitar verificação de host.
 3. Conferir compatibilidade das migrations antes de voltar a imagem. Se o
    schema for incompatível, seguir a recuperação de banco previamente testada;
    não executar migrations destrutivas nem restaurar backup automaticamente.
+   Respeitar a autorização prévia e o escopo do procedimento de recuperação.
 4. Acompanhar o deployment até concluir e repetir réplicas, `pg_isready`,
    `/health` e testes funcionais. Confirmar a versão efetivamente restaurada.
 5. Abrir issue bloqueante com commits afetados, sintomas e resultado do rollback.

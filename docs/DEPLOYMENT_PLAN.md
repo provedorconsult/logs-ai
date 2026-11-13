@@ -1,15 +1,21 @@
 # Plano de Implantação Acelerada
 
-O fluxo é Continuous Delivery, com autonomia do Maker e revisão pós-deploy pelo
-Checker (Hermes) e Devs Humanos. Cada fase entrega incrementos rastreáveis por
+O fluxo é Continuous Delivery sujeito aos gates pré-deploy de
+[AGENTS.md](../AGENTS.md), com revisão pós-deploy pelo Checker e Devs Humanos.
+Cada fase entrega incrementos rastreáveis por
 commit, com verificação conforme [HARNESS.md](HARNESS.md).
 
-## Fase 0 — Bootstrap (Concluída/Ativa)
+## Fase 0 — Bootstrap informado; G01 não aprovada
 
 Conforme o estado informado pelo responsável: rotação de senha realizada,
 acesso SSH via Tailnet validado, tokens Dokploy gerados e `.env` local configurado.
 Estas condições são premissas operacionais fornecidas, não verificações realizadas
-pela criação deste plano. Mantenha os segredos fora do Git e renove-os quando
+pela criação deste plano. O bootstrap foi informado como concluído/ativo, mas
+`G01_OVERALL=NOT_ESTABLISHED`: persistência, recuperação e validações funcionais
+ainda dependem de evidências revisadas e aprovação integral.
+`G02_AUTHORIZED=NO`; as fases seguintes são planejamento, sem autorização de
+execução. Mudanças remotas exigem diagnóstico, aprovação prévia do responsável
+e validação antes de avançar. Mantenha os segredos fora do Git e renove-os quando
 necessário. O acesso automatizado usa chave dedicada, OpenSSH não interativo e
 `RunSSH=false` no Tailscale.
 
