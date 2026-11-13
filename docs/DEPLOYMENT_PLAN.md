@@ -22,6 +22,10 @@ necessário. O acesso automatizado usa chave dedicada, OpenSSH não interativo e
 Infraestrutura de referência informada: Debian 13, Docker 29.9.3 Swarm,
 Compose v5.7.1 e Dokploy v0.31.1.
 
+A consolidação da evidência e as pendências para Debian 13 estão em
+[G01-DEBIAN13-REVIEW.md](G01-DEBIAN13-REVIEW.md). A próxima etapa é preparar
+a validação final da G01, sujeita aos gates vigentes.
+
 ## Fase 1 — Fundação & Core Pipeline
 
 Criar estrutura base, `Dockerfile`, `docker-compose.yml` de homologação,
