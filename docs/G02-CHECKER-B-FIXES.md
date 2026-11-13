@@ -59,6 +59,13 @@ No runtime Cloud continua obrigatório usar proxy gerenciado e CA fornecida.
   local e descartável com dados em tmpfs e os cenários adversariais B1–B6.
 - Ruff, formatação, sincronização do lock e comparação de `requirements.txt`
   aprovados. O aviso de depreciação Starlette/httpx permanece.
+- A primeira publicação, `3a541ab`, gerou run `43510223707` com falha antes
+  de criar jobs. Actionlint v1.7.7 confirmou que `runner.temp` não é permitido
+  em `jobs.deploy.env`. Foi substituído por caminho protegido em `work/`, com
+  criação explícita do diretório. Configuração do actionlint declara a label
+  self-hosted existente; validação estática do workflow foi executada antes
+  da republicação. A falha desse run não representa reprovação dos testes,
+  que não chegaram a executar nele.
 - Nenhum token real foi usado nos listeners adversariais. Nenhum SQL destrutivo
   foi dirigido ao banco implantado. A prova de desvio de B1 usou listener TCP
   local alternativo e recusou a conexão antes de qualquer SQL.
