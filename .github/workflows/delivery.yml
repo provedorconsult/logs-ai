@@ -74,7 +74,9 @@ jobs:
       DOKPLOY_TRANSPORT: ${{ vars.DOKPLOY_TRANSPORT }}
       DOKPLOY_APPROVED_PROXY: ${{ vars.DOKPLOY_APPROVED_PROXY }}
       DOKPLOY_DEPLOYMENT_RECEIPT: work/dokploy-deployment.json
-      DOKPLOY_ENV_FILE: work/compose-authoritative.env
+      DOKPLOY_RECOVERY_FILE: ${{ vars.DOKPLOY_RECOVERY_FILE }}
+      DOKPLOY_ENV_FILE: ''
+      DOKPLOY_SNAPSHOT_OWNERSHIP: ''
       GITHUB_TOKEN: ${{ github.token }}
       APP_TEST_URL: ${{ vars.APP_TEST_URL }}
       EXPECTED_REVISION: ${{ github.sha }}
@@ -87,25 +89,9 @@ jobs:
       - name: Materialize authoritative Compose environment
         env:
           DOKPLOY_ENV_SNAPSHOT: ${{ secrets.DOKPLOY_ENV_SNAPSHOT }}
-        run: |
-          python3 - <<'PY'
-          import os
-          from pathlib import Path
-          value = os.environ.get('DOKPLOY_ENV_SNAPSHOT')
-          if not value:
-              raise SystemExit('Configure the complete authoritative Compose environment secret')
-          Path(os.environ['DOKPLOY_ENV_FILE']).parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-          fd = os.open(os.environ['DOKPLOY_ENV_FILE'], os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-          with os.fdopen(fd, 'w') as file:
-              file.write(value)
-          PY
+        run: python3 scripts/snapshot.py create
       - run: python3 scripts/deploy.py
       - run: python3 scripts/check_health.py
       - name: Remove materialized environment
         if: always()
-        run: |
-          python3 - <<'PY'
-          import os
-          from pathlib import Path
-          Path(os.environ['DOKPLOY_ENV_FILE']).unlink(missing_ok=True)
-          PY
+        run: python3 scripts/snapshot.py cleanup

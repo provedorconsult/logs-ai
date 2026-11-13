@@ -1,5 +1,8 @@
 # G02 — B6: origem Git efetiva e verificação TLS
 
+Reavaliação posterior: B6 aprovado nos cenários específicos; novos achados de
+CD tratados em [G02-CHECKER-CD-FIXES.md](G02-CHECKER-CD-FIXES.md).
+
 Data: 13/11/2026 (America/Sao_Paulo). Base confrontada:
 `de83b9547be37fa124fc060dac93e9da80badd9e`, igual a `origin/main`, checkout
 inicialmente limpo. Fonte: reavaliação transcrita pelo responsável no chat;

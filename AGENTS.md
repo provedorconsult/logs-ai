@@ -48,6 +48,14 @@ Essa decisão substitui a exigência de HTTPS/túnel apenas nesse caminho e esco
 Fixar a origem exata autorizada, recusar redirects e não enviar o token a outros
 hosts. Não altera as restrições sobre SSH, MikroTik ou configuração base da VPS.
 
+Na reavaliação de `6335f02`, em 13/11/2026, o responsável declarou:
+“Autorização humana para commit, merge, deploy, alteração de vps e dokploy”.
+Essa decisão autoriza as ações necessárias no escopo vigente, sem repetir
+pedidos de autorização para essas ações. Autorização não equivale a aceite
+técnico de G01/G02 e não concede privilégios ausentes às credenciais conectadas.
+As correções de CD desta rodada não exigem alterações na configuração base,
+SSH ou Tailscale.
+
 ## Checker (Hermes) e Devs Humanos
 
 Atuam em revisão pós-deploy diretamente no código versionado e no servidor de

@@ -6,6 +6,7 @@ import re
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -251,7 +252,7 @@ def git_transport(url=GIT_ORIGIN):
     return command, env
 
 
-def publish_deployment_ref(revision):
+def deployment_ref(revision, allow_create):
     require_git_tls_environment()
     if subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip() != revision:
         raise ValueError("Local checkout does not match EXPECTED_REVISION")
@@ -272,6 +273,8 @@ def publish_deployment_ref(revision):
         if existing.split()[0] != revision:
             raise ValueError("Deployment ref already points to a different commit")
     else:
+        if not allow_create:
+            raise ValueError("Deployment ref disappeared; verification must not recreate it")
         # Never overwrite a deployment ref, including on retry.
         subprocess.run(
             [*command, "push", "origin", f"{revision}:{ref}"],
@@ -283,9 +286,152 @@ def publish_deployment_ref(revision):
     return tag
 
 
+def publish_deployment_ref(revision):
+    return deployment_ref(revision, allow_create=True)
+
+
+def verify_deployment_ref(revision):
+    return deployment_ref(revision, allow_create=False)
+
+
+def recovery_path():
+    value = os.environ.get("DOKPLOY_RECOVERY_FILE", "work/dokploy-recovery.json")
+    if not value:
+        raise ValueError("Configure a durable protected recovery file outside runner cleanup paths")
+    path = Path(value)
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        roots = [os.environ.get("GITHUB_WORKSPACE"), os.environ.get("RUNNER_TEMP")]
+        if not path.is_absolute() or any(
+            root and path.resolve().is_relative_to(Path(root).resolve()) for root in roots
+        ):
+            raise ValueError("Runner recovery file must survive checkout and temporary cleanup")
+    return path
+
+
+def read_recovery(path):
+    if path.is_symlink():
+        raise ValueError("Recovery file must not be a symlink")
+    with path.open() as file:
+        info = os.fstat(file.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077 or info.st_uid != os.getuid():
+            raise ValueError("Recovery file must be private and owned by this user")
+        return json.load(file)
+
+
+def write_recovery(path, record, create=False):
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if create:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w") as file:
+            json.dump(record, file)
+        return
+    if read_recovery(path)["journalId"] != record["journalId"]:
+        raise ValueError("Recovery ownership changed")
+    fd, temporary = tempfile.mkstemp(prefix=".dokploy-recovery-", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w") as file:
+            json.dump(record, file)
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def remove_recovery(path, record):
+    if read_recovery(path)["journalId"] != record["journalId"]:
+        raise ValueError("Recovery ownership changed")
+    path.unlink()
+
+
+def scope_bindings(compose):
+    return {
+        key: compose.get(key)
+        for key in (
+            "environmentId",
+            "sourceType",
+            "owner",
+            "repository",
+            "githubId",
+            "customGitUrl",
+            "composeType",
+            "composePath",
+            "appName",
+            "serverId",
+            "autoDeploy",
+        )
+    }
+
+
+def reconcile():
+    path = recovery_path()
+    record = read_recovery(path)
+    source_type = record["scope"].get("sourceType")
+    branch_field = "branch" if source_type == "github" else "customGitBranch"
+    allowed = {branch_field, "command", "env"}
+    if source_type not in {"git", "github"} or any(
+        set(record[state]) != allowed
+        or any(not isinstance(value, str) for value in record[state].values())
+        for state in ["before", "planned"]
+    ):
+        raise ValueError("Recovery record contains unsupported configuration fields")
+    base = validate_url(os.environ["DOKPLOY_URL"])
+    compose_id = os.environ["DOKPLOY_COMPOSE_ID"]
+    project_id = os.environ["DOKPLOY_PROJECT_ID"]
+    if (
+        record["base"] != base
+        or record["composeId"] != compose_id
+        or record["projectId"] != project_id
+        or record["phase"] != "prepared"
+        or os.environ.get("DOKPLOY_API_CONTRACT_VERIFIED") != "true"
+    ):
+        raise ValueError("Recovery requires the same scope and no deployment request")
+    token = os.environ.get("DOKPLOY_API_TOKEN") or os.environ["dokploy_token"]
+
+    def inspect():
+        current = api(base, token, "compose.one", query={"composeId": compose_id})
+        deployments = api(base, token, "deployment.allByCompose", query={"composeId": compose_id})
+        if (
+            current.get("environment", {}).get("projectId") != project_id
+            or scope_bindings(current) != record["scope"]
+            or {d["deploymentId"] for d in deployments} != set(record["deploymentIdsBefore"])
+            or any(d.get("status") not in {"done", "error"} for d in deployments)
+            or any(
+                current.get(key) not in [value, record["planned"][key]]
+                for key, value in record["before"].items()
+            )
+        ):
+            raise ValueError(
+                "External change or deployment prevents automatic configuration recovery"
+            )
+        return current
+
+    current = inspect()
+    if current.get("env") != record["before"]["env"]:
+        api(
+            base,
+            token,
+            "compose.saveEnvironment",
+            {"composeId": compose_id, "env": record["before"]["env"]},
+        )
+    metadata = {
+        key: value
+        for key, value in record["before"].items()
+        if key != "env" and current.get(key) != value
+    }
+    if metadata:
+        api(base, token, "compose.update", {"composeId": compose_id, **metadata})
+    current = inspect()
+    if any(current.get(key) != value for key, value in record["before"].items()):
+        raise RuntimeError("Configuration recovery has not been confirmed")
+    remove_recovery(path, record)
+    print("Previous Compose configuration restored; no application or database rollback performed")
+
+
 def deploy():
     receipt = Path(os.environ.get("DOKPLOY_DEPLOYMENT_RECEIPT", "work/dokploy-deployment.json"))
     receipt.unlink(missing_ok=True)
+    recovery = recovery_path()
+    if recovery.exists() or recovery.is_symlink():
+        raise ValueError("Resolve the existing recovery record before another deployment")
     approved_opener()  # Validate transport before any authenticated request.
     base = validate_url(os.environ["DOKPLOY_URL"])
     token = os.environ.get("DOKPLOY_API_TOKEN") or os.environ["dokploy_token"]
@@ -330,6 +476,22 @@ def deploy():
     previous_ids = {d["deploymentId"] for d in previous}
     tag = f"logs-ai-deploy-{revision}"
     require_immutable_tag(tag)
+    journal = {
+        "journalId": uuid.uuid4().hex,
+        "phase": "prepared",
+        "base": base,
+        "composeId": compose_id,
+        "projectId": project_id,
+        "scope": scope_bindings(compose),
+        "deploymentIdsBefore": sorted(previous_ids),
+        "before": {
+            branch_field: branch,
+            "command": compose.get("command", ""),
+            "env": compose["env"],
+        },
+        "planned": {branch_field: tag, "command": "", "env": environment},
+    }
+    write_recovery(recovery, journal, create=True)
     publish_deployment_ref(revision)
     api(
         base,
@@ -346,10 +508,13 @@ def deploy():
         {"composeId": compose_id, "env": environment},
     )
     title = f"G02 {revision} {uuid.uuid4().hex}"
+    # Persist BEFORE submitting, because a transport failure may hide an accepted request.
+    journal["phase"] = "deployment_requested"
+    write_recovery(recovery, journal)
     result = api(base, token, "compose.deploy", {"composeId": compose_id, "title": title})
     record = wait_deployment(base, token, compose_id, previous_ids, title, result)
     require_immutable_tag(tag)
-    publish_deployment_ref(revision)  # Also recheck the ref after the remote build.
+    verify_deployment_ref(revision)
     receipt.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(receipt, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, "w") as file:
@@ -363,12 +528,18 @@ def deploy():
             },
             file,
         )
+    remove_recovery(recovery, journal)
     print("Requested Dokploy deployment completed; remote application readiness still required")
 
 
 if __name__ == "__main__":
     try:
-        deploy()
+        if sys.argv[1:] == ["--reconcile"]:
+            reconcile()
+        elif sys.argv[1:]:
+            raise ValueError("Use no arguments or --reconcile")
+        else:
+            deploy()
     except (
         KeyError,
         ValueError,

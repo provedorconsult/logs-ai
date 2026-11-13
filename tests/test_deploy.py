@@ -11,7 +11,10 @@ spec.loader.exec_module(deploy)
 
 @pytest.fixture(autouse=True)
 def isolated_receipt(monkeypatch, tmp_path):
+    # Unit fixtures use ephemeral paths; runner persistence policy has dedicated tests.
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     monkeypatch.setenv("DOKPLOY_DEPLOYMENT_RECEIPT", str(tmp_path / "receipt.json"))
+    monkeypatch.setenv("DOKPLOY_RECOVERY_FILE", str(tmp_path / "recovery.json"))
 
 
 @pytest.mark.parametrize(
@@ -64,6 +67,7 @@ def test_tailnet_http_requires_authorization_and_exact_origin(monkeypatch):
 def configure_deploy(monkeypatch):
     monkeypatch.setenv("DOKPLOY_TRANSPORT", "direct")
     monkeypatch.setattr(deploy, "require_immutable_tag", lambda tag: None)
+    monkeypatch.setattr(deploy, "verify_deployment_ref", lambda sha: "logs-ai-deploy-" + sha)
     monkeypatch.setenv("DOKPLOY_URL", "https://dokploy.example.com")
     monkeypatch.setenv("DOKPLOY_API_TOKEN", "test-only-token")
     monkeypatch.setenv("DOKPLOY_COMPOSE_ID", "logs-compose")
@@ -189,6 +193,17 @@ def test_existing_deployment_ref_cannot_be_retargeted(monkeypatch):
     monkeypatch.setattr(deploy.subprocess, "check_output", lambda *a, **k: next(responses))
     with pytest.raises(ValueError, match="different commit"):
         deploy.publish_deployment_ref("a" * 40)
+
+
+def test_post_deploy_ref_check_cannot_recreate_missing_tag(monkeypatch):
+    url = deploy.GIT_ORIGIN
+    responses = iter(["a" * 40, url, url, "a" * 40 + "\trefs/tags/tag", "a" * 40, url, url, ""])
+    monkeypatch.setattr(deploy.subprocess, "check_output", lambda *a, **k: next(responses))
+    monkeypatch.setattr(deploy, "git_transport", lambda *a: (["git"], {}))
+    monkeypatch.setattr(deploy.subprocess, "run", lambda *a, **k: pytest.fail("No second push"))
+    deploy.publish_deployment_ref("a" * 40)
+    with pytest.raises(ValueError, match="must not recreate"):
+        deploy.verify_deployment_ref("a" * 40)
 
 
 @pytest.mark.parametrize("value", [None, "", "APP_REVISION=old\n", "POSTGRES_PASSWORD=REDACTED\n"])

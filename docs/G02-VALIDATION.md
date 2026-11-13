@@ -9,6 +9,8 @@ Resposta à reavaliação de `8fefce0`, achados B1–B6:
 [G02-CHECKER-B-FIXES.md](G02-CHECKER-B-FIXES.md).
 Correção das lacunas restantes de B6 na revisão de `de83b95`:
 [G02-CHECKER-B6-FIXES.md](G02-CHECKER-B6-FIXES.md).
+Reconciliação e ciclo de vida dos artefatos na revisão de `6335f02`:
+[G02-CHECKER-CD-FIXES.md](G02-CHECKER-CD-FIXES.md).
 G02 permanece autorizada; este registro não constitui aceite independente.
 
 | Verificação | Resultado observado |
