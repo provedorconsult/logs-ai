@@ -130,15 +130,14 @@ def deploy():
         or compose.get("autoDeploy")
     ):
         raise ValueError("Compose must belong to the configured logs-ai project and Git source")
-    command = api(base, token, "compose.getDefaultCommand", query={"composeId": compose_id})
-    if not isinstance(command, str) or not command.startswith("docker compose "):
-        raise ValueError("Unexpected Dokploy Compose command")
     tag = publish_deployment_ref(revision)
     api(
         base,
         token,
         "compose.update",
-        {"composeId": compose_id, "command": command, branch_field: tag},
+        # An empty override selects Dokploy's native command. Its preview includes
+        # the docker executable, whereas the override field expects only arguments.
+        {"composeId": compose_id, "command": "", branch_field: tag},
     )
     api(
         base,

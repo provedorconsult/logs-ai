@@ -91,25 +91,21 @@ def test_deploy_guards_source_and_preserves_database_secret(monkeypatch, source)
         calls.append((route, data))
         if route == "compose.one":
             return compose
-        if route == "compose.getDefaultCommand":
-            return "docker compose -p logs-ai --env-file .env up -d --build"
 
     monkeypatch.setattr(deploy, "api", api)
     monkeypatch.setattr(deploy, "publish_deployment_ref", lambda sha: "logs-ai-deploy-" + sha)
     deploy.deploy()
     assert [route for route, _ in calls] == [
         "compose.one",
-        "compose.getDefaultCommand",
         "compose.update",
         "compose.saveEnvironment",
         "compose.deploy",
     ]
-    command = calls[2][1]["command"]
-    assert command == "docker compose -p logs-ai --env-file .env up -d --build"
-    assert calls[2][1]["branch" if source == "github" else "customGitBranch"] == (
+    assert calls[1][1]["command"] == ""
+    assert calls[1][1]["branch" if source == "github" else "customGitBranch"] == (
         "logs-ai-deploy-" + "a" * 40
     )
-    environment = calls[3][1]["env"]
+    environment = calls[2][1]["env"]
     assert "POSTGRES_PASSWORD=test-only-password\n" in environment
     assert "APP_REVISION=" + "a" * 40 in environment
     assert "APP_IMAGE=logs-ai:" + "a" * 40 in environment

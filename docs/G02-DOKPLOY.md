@@ -61,8 +61,13 @@ Nenhum contêiner da aplicação foi criado nesse pedido. A estratégia inicial 
 comando com verificação de HEAD foi substituída pela tag Git por SHA e comando
 Compose padrão, respeitando a validação da instância.
 
-Publicar a correção, observar seu CI e repetir o deploy. Pedido aceito pela API
-não constitui aplicação saudável; resultados remotos serão registrados abaixo.
+O SHA `257f575311758281e8ae7327dc48372534262cc1` passou no run `43453648186`.
+O pedido `IjgYfjn-GwJdGXxey8vEx` confirmou busca da tag, mas falhou antes do
+build porque o preview `docker compose ...` não pode ser copiado integralmente
+para o campo de override: a instância acrescenta `docker`, resultando em
+`docker docker compose ...`. O cliente foi corrigido para deixar `command`
+vazio, selecionando o padrão nativo. Nenhuma tentativa anterior criou serviços
+da aplicação. Pedido aceito não constitui aplicação saudável.
 
 CD automática ainda depende de runner e variáveis/secret no GitHub. A conexão
 GitHub disponível declara `push=true`, `admin=false`; isso não estabelece
