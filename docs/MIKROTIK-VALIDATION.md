@@ -61,3 +61,14 @@ Instalação e reversão corrigidas para usar `rulePrefix`, preservando as
 validações de colisão real. O filtro corrigido foi validado por leitura no
 roteador; a importação completa continua pertencendo à equipe de redes.
 Não houve alteração no código/imagem do coletor, que permanece em `0d4e729`.
+
+
+## Nome da ação compatível com RouterOS
+
+Na segunda tentativa, a equipe observou rejeição de `logs-ai-private` em
+`/system logging action add`: o RouterOS exige somente letras e números no
+nome da ação. Instalação, reversão e monitor foram alinhados para `logsaiPrivate`.
+Os prefixos de mensagens permanecem iguais. A falha informada ocorreu na
+criação da ação, antes das adições de regras; não indica configuração completa.
+Esta correção não requer novo deploy do coletor. A importação completa ainda
+precisa ser confirmada pela equipe; não foi executada pelo Maker.

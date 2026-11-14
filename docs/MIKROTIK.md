@@ -48,7 +48,7 @@ componentes que compartilham esse banco.
 
 1. Conferir o receptor saudável e a rota privada TCP/5514.
 2. Revisar [install-logging.rsc](../scripts/mikrotik/install-logging.rsc). Ele
-   cria uma ação `logs-ai-private` e duas regras com prefixos próprios para
+   cria uma ação `logsaiPrivate` e duas regras com prefixos próprios para
    `ppp,info` e `system,info,!ppp`. Não modifica perfis PPP, scripts on-up/on-down,
    clientes, senhas, firewall ou as regras de logging anteriores.
 3. Importar o arquivo pelo método habitual da equipe no RouterOS 7.24.5.

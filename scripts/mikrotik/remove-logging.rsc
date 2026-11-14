@@ -1,7 +1,7 @@
 # Single block keeps local variables in scope during RouterOS import.
 {
 # Network team rollback: removes only this integration's matching rules/action.
-:local actionName "logs-ai-private"
+:local actionName "logsaiPrivate"
 :local pppPrefix "logs-ai-ppp: "
 :local adminPrefix "logs-ai-admin: "
 :local actions [/system logging action find where name=$actionName]

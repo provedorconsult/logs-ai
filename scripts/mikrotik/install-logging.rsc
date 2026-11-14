@@ -6,7 +6,7 @@
 :local destination "192.168.15.25"
 :local source "192.168.15.1"
 :local port 5514
-:local actionName "logs-ai-private"
+:local actionName "logsaiPrivate"
 :local pppPrefix "logs-ai-ppp: "
 :local adminPrefix "logs-ai-admin: "
 

@@ -54,8 +54,8 @@ def inspect(transport):
         "localPppUserCount": int(secrets.strip()) if secrets.strip().isdigit() else None,
         "tcpLoggingPropertyPresent": "remote-protocol=" in logging,
         "cefLoggingPropertyPresent": "remote-log-format=" in logging,
-        "logsAiActionPresent": 'name="logs-ai-private"' in logging
-        or "name=logs-ai-private " in logging,
+        "logsAiActionPresent": 'name="logsaiPrivate"' in logging
+        or "name=logsaiPrivate " in logging,
         "logsAiPppRulePresent": "logs-ai-ppp:" in rules,
         "logsAiAdminRulePresent": "logs-ai-admin:" in rules,
     }
