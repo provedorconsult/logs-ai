@@ -41,6 +41,50 @@ O responsável autorizou explicitamente implementação, commit, merge e deploy.
 - Links Markdown locais conferidos e parecer original comparado byte a byte.
   Nenhum resultado histórico foi promovido a aceite atual.
 
-CI e implantação remota serão registradas após observação.
+CI e implantação remota estão detalhadas na seção seguinte.
 Pendência independente conhecida: parecer final e aceite da G01 pelo Checker e
 Devs Humanos; criar um arquivo de acompanhamento não substitui a execução.
+
+## CI e implantação observadas
+
+- Código publicado: `c6d16d98bc0b82d54702617cafa6098982a9ff1e`.
+- CI [43550967210](https://github.com/provedorconsult/logs-ai/actions/runs/43550967210):
+  `verify=success`, incluindo build e readiness dos dois pacotes;
+  `deploy=skipped`. O Maker executou o deploy manual autorizado via API.
+- Contrato atual consultado na instância: Dokploy v0.31.2. Não se atribui a esta
+  entrega uma atualização do Dokploy; essa é a versão observada na consulta.
+- Recurso `logs-ai-mikrotik`, mesmo projeto/ambiente e appName, source raw;
+  deployment `FwvB5wbJkX1bTi7oz2RF3` concluído em `done` e correlacionado ao
+  título exclusivo `audit-c6d16d9-3f31624f`.
+- Snapshot integral protegido de Compose/env e journal com intenção/etapas;
+  ambiente preservado, alterando apenas `APP_REVISION`, e artefato atualizado
+  para o contrato singular/plural já versionado. Configuração efetiva conferida
+  antes e depois. Journal terminou em `verified`. Nenhuma tag foi modificada.
+- Logs do build confirmaram o objeto Git completo, `uv export --locked` e o
+  digest fixado do uv. Imagem implantada:
+  `sha256:226b0f78c61ac7988d9db16b77017cd0ba2b7f2af665f6bfeb6eb4752a501ca3`.
+- Label OCI e `X-App-Revision` iguais ao SHA; `/health` HTTP 200, banco OK,
+  contêiner saudável, zero reinícios e logs de startup sem traceback.
+  APP_TEST_URL permanece na origem administrativa privada da porta 18002,
+  registrada no recibo operacional protegido, sem publicar hostname do ambiente.
+- Sessão SSH de leitura no MikroTik, com fingerprint previamente confirmado,
+  observou RouterOS 7.24.5 e uma regra para cada prefixo. Não se aplicou script
+  nem alterou configuração do roteador. Um logout administrativo nativo gerado
+  pela sessão foi recebido e confirmado por SQL somente leitura **após** o início
+  desta revisão, com origem correta nas métricas e commit no PostgreSQL.
+- PostgreSQL observado: 17.12. Contêiner do banco permaneceu o mesmo; migration
+  única `001_initial.sql`, checksum
+  `e749720863762629d83a527ccfc9adc5755a48c87d185e7319cdc51553a6dfe2`.
+  A consulta confirmou 54 eventos anteriores presentes. Nenhuma migration nova.
+- Core permaneceu saudável em `bbb9a698ca4c274e43d18f133a08039c28f0ca4a`;
+  não foi necessário substituí-lo para esta entrega de build/organização.
+- Contadores do novo processo na consulta: um recebido/persistido, zero erros
+  de banco, rejeições ou ignorados e fila vazia. Isso prova o fluxo administrativo
+  observado, sem alegar repetição de todos os casos PPP nesta rodada.
+- Recursos temporários de leitura foram saneados/removidos; stacks, redes,
+  volumes e PostgreSQL descartáveis locais foram removidos. Snapshots/journal
+  operacionais de recuperação foram preservados com acesso restrito.
+
+AUD-01/02/03/05 têm correções publicadas e verificadas. AUD-04 permanece pendente
+quanto ao parecer final independente da G01; somente o registro da lacuna foi
+corrigido. CD automática e aceite integral de fases continuam não estabelecidos.
