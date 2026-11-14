@@ -73,6 +73,49 @@ def test_cef_extension_does_not_retain_secrets():
 
 
 @pytest.mark.parametrize(
+    "topics,message,kind",
+    [
+        (
+            "system,info,account",
+            "logs-ai-admin: user operator logged in from 192.0.2.1 via ssh",
+            "routeros.admin.login",
+        ),
+        (
+            "system,info,account",
+            "logs-ai-admin: user operator logged out from 192.0.2.1 via ssh",
+            "routeros.admin.logout",
+        ),
+        ("ppp,info", "logs-ai-ppp: <pppoe-alice>: authenticated", "pppoe.authenticated"),
+        ("ppp,info", "logs-ai-ppp: alice logged out, 60 1000 2000", "pppoe.session.ended"),
+        (
+            "system,info",
+            "logs-ai-admin: ppp secret alice changed by operator (password=do-not-store)",
+            "ppp.user.updated",
+        ),
+    ],
+)
+def test_native_hardware_product_cef(topics, message, kind):
+    # Header shape observed on RouterOS 7.24.5; identities/messages are synthetic.
+    frame = (
+        f"<134>Nov 13 21:00:00 router CEF:0|MikroTik|CCR2116-12G-4S+|"
+        f"7.24.5 (stable)|10|{topics}|Low|dvchost=router dvc=192.0.2.10 "
+        f"msg={message} app=ssh duser=operator outcome=success src=192.0.2.1"
+    ).encode()
+    event = normalize(frame)
+    assert event["attributes"]["event_kind"] == kind
+    assert "do-not-store" not in json.dumps(event)
+    assert "dvchost" not in json.dumps(event)
+
+
+@pytest.mark.parametrize("vendor,product", [("Other", "CCR2116-12G-4S+"), ("MikroTik", "Unknown")])
+def test_cef_unrecognized_vendor_or_product_is_ignored(vendor, product):
+    assert (
+        normalize(f"CEF:0|{vendor}|{product}|7.24.5|10|ppp,info|Low|msg=alice logged in".encode())
+        is None
+    )
+
+
+@pytest.mark.parametrize(
     "frame",
     [
         b"",

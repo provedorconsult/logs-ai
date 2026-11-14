@@ -123,8 +123,8 @@ def test_mikrotik_tcp_to_real_postgresql_pipeline():
         _, writer = await asyncio.open_connection("127.0.0.1", server.sockets[0].getsockname()[1])
         frames = [
             (
-                b"CEF:0|MikroTik|RouterOS|7.24.5|ppp,info|"
-                b"logs-ai-ppp: <pppoe-synthetic>: authenticated|6|"
+                b"CEF:0|MikroTik|CCR2116-12G-4S+|7.24.5 (stable)|10|ppp,info|Low|"
+                b"msg=logs-ai-ppp: <pppoe-synthetic>: authenticated app=ppp"
             ),
             b"ppp,info logs-ai-ppp: synthetic logged out, 60 1000 2000",
             (

@@ -36,7 +36,14 @@ def cef_message(value):
             current.append(char)
     else:
         return None
-    if fields[1].lower() != "mikrotik" or fields[2].lower() != "routeros":
+    # Native RouterOS CEF uses the hardware model as Device Product, not "RouterOS".
+    product = fields[2].strip()
+    hardware = re.fullmatch(r"(?:CCR|CRS|RB)[A-Za-z0-9+./_-]{1,80}", product, re.I)
+    if (
+        fields[0] != "CEF:0"
+        or fields[1].strip().lower() != "mikrotik"
+        or not (product.lower() == "routeros" or hardware)
+    ):
         return None
     values = {}
     matches = list(re.finditer(r"(?:^|\s)([A-Za-z][A-Za-z0-9]*)=", extension))

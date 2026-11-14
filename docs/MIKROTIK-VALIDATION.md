@@ -72,3 +72,21 @@ Os prefixos de mensagens permanecem iguais. A falha informada ocorreu na
 criação da ação, antes das adições de regras; não indica configuração completa.
 Esta correção não requer novo deploy do coletor. A importação completa ainda
 precisa ser confirmada pela equipe; não foi executada pelo Maker.
+
+## Primeira aplicação bem-sucedida e compatibilidade CEF
+
+A equipe confirmou importação concluída. Inspeção SSH somente leitura confirmou
+`logsaiPrivate` e exatamente uma regra para cada prefixo. A conexão TCP ficou
+ativa, mas os primeiros eventos foram ignorados, sem erro de banco: o cabeçalho
+nativo usa o modelo `CCR2116-12G-4S+` como Device Product e `7.24.5 (stable)` como
+versão; o parser original aceitava somente `RouterOS` como produto.
+
+Diagnóstico passivo temporário, restrito ao namespace de rede do coletor e ao
+fluxo do roteador para TCP/5514, extraiu somente estrutura/cabeçalho e indicadores
+de tipos de evento; não publicou mensagens, usuários, comandos ou credenciais.
+Parser ajustado para modelos CCR/CRS/RB, mantendo validação do fabricante e
+normalização sem persistir mensagens brutas. Sete casos de regressão adicionais
+cobrem cabeçalho nativo e rejeição de fabricante/produto desconhecido.
+157 testes passaram com PostgreSQL 17 descartável; Ruff passou. O teste de
+pipeline TCP/PostgreSQL também usa o cabeçalho nativo com identidades sintéticas.
+Novo deploy e evidência de eventos reais serão registrados após a implantação.
