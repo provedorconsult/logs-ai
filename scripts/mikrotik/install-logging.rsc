@@ -25,8 +25,8 @@
 }
 
 # Validate collisions before adding anything. Existing rules/actions are preserved.
-:foreach prefix in={"logs-ai-ppp: ";"logs-ai-admin: "} do={
-    :local rules [/system logging find where prefix=$prefix]
+:foreach rulePrefix in={"logs-ai-ppp: ";"logs-ai-admin: "} do={
+    :local rules [/system logging find where prefix=$rulePrefix]
     :if ([:len $rules] > 1) do={ :error "logs-ai: duplicate owned prefix; inspect manually" }
     :if ([:len $rules] = 1) do={
         :local ruleId [:pick $rules 0]
@@ -37,10 +37,10 @@
             :error "logs-ai: prefix is used by another action; no settings were overwritten"
         }
         :local topics [:tostr [/system logging get $ruleId topics]]
-        :if (($prefix = $pppPrefix) && ($topics != "ppp,info") && ($topics != "ppp;info")) do={
+        :if (($rulePrefix = $pppPrefix) && ($topics != "ppp,info") && ($topics != "ppp;info")) do={
             :error "logs-ai: existing PPP rule differs; inspect manually"
         }
-        :if (($prefix = $adminPrefix) && ($topics != "system,info,!ppp") && \
+        :if (($rulePrefix = $adminPrefix) && ($topics != "system,info,!ppp") && \
              ($topics != "system;info;!ppp")) do={
             :error "logs-ai: existing administrative rule differs; inspect manually"
         }

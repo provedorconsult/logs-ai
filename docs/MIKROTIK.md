@@ -106,3 +106,12 @@ Registro de implementação, build, deploy e verificações observadas será man
 em [MIKROTIK-VALIDATION.md](MIKROTIK-VALIDATION.md). Aplicação dos scripts e
 validação de eventos reais pertencem ao acompanhamento com a equipe de redes;
 testes sintéticos não substituem esse passo.
+
+## Correção de importação: variável de filtro
+
+A primeira versão usava `:foreach prefix ...` junto de `find where prefix=$prefix`.
+RouterOS pode resolver o identificador como a própria propriedade do menu,
+selecionando regras alheias e produzindo o erro falso de prefixo duplicado.
+A correção usa `rulePrefix`, diferente do nome da propriedade, nos scripts de
+instalação e reversão. Não remover regras para contornar esse erro: obter a
+versão corrigida e repetir a importação. Duplicidade real continua a abortar.

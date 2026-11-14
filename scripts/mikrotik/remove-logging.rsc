@@ -17,15 +17,15 @@
         :error "logs-ai: action differs; refusing removal"
     }
 }
-:foreach prefix in={"logs-ai-ppp: ";"logs-ai-admin: "} do={
-    :foreach rule in=[/system logging find where prefix=$prefix] do={
+:foreach rulePrefix in={"logs-ai-ppp: ";"logs-ai-admin: "} do={
+    :foreach rule in=[/system logging find where prefix=$rulePrefix] do={
         :if ([/system logging get $rule action] != $actionName) do={
             :error "logs-ai: prefix belongs to another action; refusing removal"
         }
     }
 }
-:foreach prefix in={"logs-ai-ppp: ";"logs-ai-admin: "} do={
-    :foreach rule in=[/system logging find where prefix=$prefix] do={ /system logging remove $rule }
+:foreach rulePrefix in={"logs-ai-ppp: ";"logs-ai-admin: "} do={
+    :foreach rule in=[/system logging find where prefix=$rulePrefix] do={ /system logging remove $rule }
 }
 :if ([:len $actions] = 1) do={
     :if ([:len [/system logging find where action=$actionName]] = 0) do={

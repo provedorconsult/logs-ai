@@ -46,3 +46,18 @@ esta entrega não comprova proteção administrativa de tags ou CD automático.
 Aplicação dos scripts pela equipe de redes e recebimento real dos eventos
 PPPoE/administrativos ainda pendentes. Testes sintéticos não comprovam esse
 recebimento. Aceite independente permanece com Hermes e Devs Humanos.
+
+## Correção após primeira tentativa de importação
+
+A equipe informou `duplicate owned prefix` na importação. Consultas SSH somente
+leitura no RouterOS 7.24.5 reproduziram a colisão de nomes: usando variável
+`prefix`, a expressão `find where prefix=$prefix` selecionou cinco regras;
+consultas literais dos dois prefixos retornaram zero. Usando `rulePrefix`, a
+mesma busca retornou zero corretamente. A ação da integração também não existia.
+Logo, o erro informado não demonstrava duplicidade real e ocorreu antes das
+adições do script. Nenhuma configuração foi removida ou alterada pelo Maker.
+
+Instalação e reversão corrigidas para usar `rulePrefix`, preservando as
+validações de colisão real. O filtro corrigido foi validado por leitura no
+roteador; a importação completa continua pertencendo à equipe de redes.
+Não houve alteração no código/imagem do coletor, que permanece em `0d4e729`.
