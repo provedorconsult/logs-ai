@@ -139,3 +139,39 @@ classificação correta. A equipe foi solicitada a repetir a alteração de usu�
 após a correção. Eventos anteriores ignorados não foram recuperados: não havia
 replay nem persistência de mensagem bruta. Contadores `/metrics` representam o
 processo atual e não incluem reparos históricos executados diretamente no banco.
+
+## Eventos reais confirmados após repetição pela equipe
+
+A equipe informou nova autenticação/desconexão PPPoE e alteração de comentário
+em uma conta de teste de `/user`. Consulta remota em transação somente leitura
+confirmou os seguintes eventos posteriores ao início do contêiner `827fa14`
+(`2026-11-14T02:01:51.28990822Z`, 13/11/2026 às 23h01 em São Paulo):
+
+| Tipo | Eventos persistidos na consulta |
+| --- | ---: |
+| `pppoe.authenticated` | 3 |
+| `pppoe.session.started` | 3 |
+| `pppoe.session.ended` | 6 |
+| `routeros.admin.login` | 1 |
+| `routeros.admin.logout` | 1 |
+| `routeros.admin_user.updated` | 1 |
+
+A busca restrita ao identificador de teste informado pela equipe confirmou uma
+atualização administrativa. Identificadores de clientes/operadores e valores de
+comentário não são publicados. O coletor registra o evento de alteração e o
+ator/usuário disponíveis, sem guardar comandos nem conteúdo anterior/novo dos
+campos; portanto o valor exato do comentário não foi comprovado pelo banco.
+
+Contadores do processo: 24 recebidos, 15 persistidos, nove ignorados, zero erros
+de banco, zero rejeições, fila vazia e conexão TCP ativa. Mensagens de estado
+intermediário não reconhecidas podem ser ignoradas; as contagens são de eventos,
+não de sessões únicas. Uma desconexão pode gerar mais de uma mensagem nativa.
+Os eventos acima foram observados na versão corrigida, sem depender dos reparos
+históricos. Migration/checksum permaneceram iguais; saúde HTTP 200, revisão
+conferida, contêiner saudável sem reinícios. Core G02 preservado em `bbb9a69`.
+
+Validação funcional observada: autenticação PPPoE, início/fim de sessão e
+alteração de conta administrativa `/user`. Alterações de clientes em
+`/ppp secret` têm testes sintéticos, mas ainda não foram demonstradas com evento
+real nesta rodada. Esses dois menus não são equivalentes. Revisão independente
+Hermes/Devs Humanos e aceite integral dos gates/CD continuam pendentes.
