@@ -13,6 +13,7 @@ Nos demais, abrir explicitamente o arquivo; não pressupor instalação global.
 | [logs-ai-postgres](../.agents/skills/logs-ai-postgres/SKILL.md) | Provisionar/validar PostgreSQL dedicado, persistência, migrations e backup. |
 | [logs-ai-mikrotik](../.agents/skills/logs-ai-mikrotik/SKILL.md) | Adaptar e entregar scripts, conferir RouterOS e acompanhar a equipe. |
 | [logs-ai-validation](../.agents/skills/logs-ai-validation/SKILL.md) | Testar ponta a ponta, registrar limitações e preparar revisão independente. |
+| [logs-ai-web](../.agents/skills/logs-ai-web/SKILL.md) | Implantar console web, banco isolado, clientes MikroTik e domínio HTTPS. |
 
 Exemplo de solicitação a um agente novo:
 

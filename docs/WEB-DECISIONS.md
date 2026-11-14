@@ -31,3 +31,17 @@ restrita do proxy recusou a conexão HTTPS ao domínio público com 403. Foi
 solicitada a inclusão desse host nas configurações do ambiente; nenhuma rota
 alternativa será usada para contornar a política. Implantação/configuração no
 Dokploy e testes locais podem prosseguir independentemente dessa liberação.
+
+## Resultado das decisões
+
+Código `3dd5967` publicado e implantado no web e coletor em 14/11/2026, com CI
+aprovada. Bootstrap removido após inicialização; conta real preservada com troca
+obrigatória, também conferida na API interna. Testes SSH do Maker limitaram-se
+à consulta de recurso e chave do roteador, sem aplicar RSC. Evidência de novo
+fluxo desta rodada é somente um logout administrativo persistido.
+
+O core histórico foi preservado. A entrega usa deploy manual por SHA; gates
+pendentes de CD e aceite independente não foram declarados concluídos.
+O host público continua bloqueado pelo proxy do executor: configuração HTTPS
+confirmada no Dokploy/Traefik, validação pública TLS/login pendente de grant de
+rede. Detalhes e IDs em [WEB-VALIDATION.md](audits/WEB-VALIDATION.md).

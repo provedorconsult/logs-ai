@@ -8,7 +8,8 @@ description: Reconstruir o contexto do logs-ai e coordenar instalação de um se
 Trabalhe a partir da raiz do repositório. Leia `AGENTS.md`, `README.md`,
 `docs/NEW-SERVER.md`, `docs/RUNBOOK.md` e `docs/DEPLOYMENT_PLAN.md`.
 Este projeto tem core FastAPI, coletor privado TCP/CEF, PostgreSQL 17,
-migrations transacionais e scripts RouterOS. Não há IA/dashboard nesta entrega.
+migrations transacionais, scripts RouterOS e console web separado (dashboard,
+relatórios, clientes e usuários). Não há análise por IA nesta entrega.
 G02 é Fase 1; ingestão é incremento de G03. Autorização não é aceite técnico.
 
 ## Reconstruir antes de agir
@@ -31,6 +32,7 @@ G02 é Fase 1; ingestão é incremento de G03. Autorização não é aceite téc
 - Banco/volume/migrations: skill `logs-ai-postgres`.
 - Pacote e deploy: skill `logs-ai-stack`.
 - Scripts e leitura RouterOS: skill `logs-ai-mikrotik`.
+- Interface, metadados, permissões e HTTPS: skill `logs-ai-web`.
 - Comissionamento por origem: skill `logs-ai-validation`.
 
 Abra os outros `SKILL.md` no diretório irmão, conforme a etapa; a menção aqui não
