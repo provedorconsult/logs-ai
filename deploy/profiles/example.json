@@ -1,0 +1,18 @@
+{
+  "instance": "logs-filial01",
+  "server": {
+    "private_ip": "10.77.0.25",
+    "syslog_port": 5514,
+    "health_bind": "127.0.0.1",
+    "core_port": 18000,
+    "collector_port": 18002
+  },
+  "routers": [
+    {"id": "borda01", "source_ip": "10.77.0.1", "action_name": "logsaiPrivate"},
+    {"id": "borda02", "source_ip": "10.77.0.2", "action_name": "logsaiPrivate"}
+  ],
+  "required_event_kinds": [
+    "pppoe.authenticated", "pppoe.session.ended",
+    "ppp.user.created", "routeros.admin_user.updated"
+  ]
+}

@@ -130,3 +130,13 @@ A revisão pós-deploy complementa a decisão humana e os controles aplicáveis.
 Um agente que atuou como Maker não comprova independência como Checker da
 própria entrega. Mudanças futuras de modelo devem registrar a decisão humana
 e seu escopo, mantendo a distinção entre autorização e aprovação técnica.
+
+
+## Entrada para novas instalações
+
+Para agente sem contexto, abrir `.agents/skills/logs-ai-project/SKILL.md`,
+`docs/SKILLS.md` e `docs/NEW-SERVER.md`. A solicitação humana de 13/11/2026 autoriza
+padronizar o repositório e criar skills de instalação/validação; não identifica
+outro servidor a provisionar nesta rodada. Contexto, IPs e exceções do ambiente
+histórico não são defaults globais. Preservar decisões humanas vigentes por
+alvo e distinguir instalação nova, atualização e evidência de aceite.

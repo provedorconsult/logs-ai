@@ -38,7 +38,9 @@ def query(transport, command):
         channel.close()
 
 
-def inspect(transport):
+def inspect(transport, action_name="logsaiPrivate"):
+    if not re.fullmatch(r"[A-Za-z0-9]{1,32}", action_name):
+        raise ValueError("Invalid RouterOS logging action name")
     resource = query(transport, "/system resource print without-paging")
     logging = query(transport, "/system logging action print detail without-paging")
     rules = query(transport, "/system logging print detail without-paging")
@@ -54,8 +56,9 @@ def inspect(transport):
         "localPppUserCount": int(secrets.strip()) if secrets.strip().isdigit() else None,
         "tcpLoggingPropertyPresent": "remote-protocol=" in logging,
         "cefLoggingPropertyPresent": "remote-log-format=" in logging,
-        "logsAiActionPresent": 'name="logsaiPrivate"' in logging
-        or "name=logsaiPrivate " in logging,
+        "logsAiActionPresent": bool(
+            re.search(r'\bname="?' + re.escape(action_name) + r'"?(?:\s|$)', logging)
+        ),
         "logsAiPppRulePresent": "logs-ai-ppp:" in rules,
         "logsAiAdminRulePresent": "logs-ai-admin:" in rules,
     }
@@ -69,8 +72,8 @@ def main():
         raise ValueError("Provide an independently verified MikroTik host fingerprint")
     sock = socket.create_connection(
         (
-            os.environ.get("MIKROTIK_PRIVATE_HOST", "192.168.15.1"),
-            int(os.environ.get("MIKROTIK_PRIVATE_SSH_PORT", "2233")),
+            os.environ.get("MIKROTIK_PRIVATE_HOST", "10.77.0.1"),
+            int(os.environ.get("MIKROTIK_PRIVATE_SSH_PORT", "22")),
         ),
         timeout=10,
     )
@@ -80,7 +83,9 @@ def main():
         authenticate(
             transport, expected, os.environ["mikrotik_username"], os.environ["mikrotik_password"]
         )
-        print(json.dumps(inspect(transport)))
+        print(
+            json.dumps(inspect(transport, os.environ.get("MIKROTIK_LOG_ACTION", "logsaiPrivate")))
+        )
     finally:
         transport.close()
 

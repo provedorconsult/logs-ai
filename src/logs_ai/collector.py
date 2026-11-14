@@ -3,6 +3,7 @@
 import asyncio
 import ipaddress
 import os
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -25,7 +26,14 @@ def store(event, source):
 
 class Receiver:
     def __init__(self, allowed_source, persist=store, queue_size=2048):
-        self.allowed_source = ipaddress.ip_address(allowed_source)
+        sources = [value.strip() for value in allowed_source.split(",")]
+        if not 1 <= len(sources) <= 32 or any(not value for value in sources):
+            raise ValueError("Configure one to 32 explicit MikroTik source addresses")
+        self.allowed_sources = {ipaddress.ip_address(value) for value in sources}
+        if len(self.allowed_sources) != len(sources):
+            raise ValueError("Duplicate MikroTik source addresses")
+        self.allowed_source = ipaddress.ip_address(sources[0])
+        self.instance_id = uuid.uuid4().hex
         self.persist = persist
         self.queue = asyncio.Queue(maxsize=queue_size)
         self.connections = 0
@@ -34,16 +42,20 @@ class Receiver:
         }
         self.database_failed = False
         self.persisted_by_kind = {}
+        self.persisted_by_source_kind = {str(source): {} for source in self.allowed_sources}
 
     async def consume(self):
         while True:
             event = await self.queue.get()
+            source = event.get("_source", str(self.allowed_source))
             while True:
                 try:
-                    await asyncio.to_thread(self.persist, event, str(self.allowed_source))
+                    await asyncio.to_thread(self.persist, event, source)
                     self.stats["persisted"] += 1
                     kind = event["attributes"]["event_kind"]
                     self.persisted_by_kind[kind] = self.persisted_by_kind.get(kind, 0) + 1
+                    by_source = self.persisted_by_source_kind[source]
+                    by_source[kind] = by_source.get(kind, 0) + 1
                     self.database_failed = False
                     self.queue.task_done()
                     break
@@ -56,10 +68,10 @@ class Receiver:
     async def handle(self, reader, writer):
         peer = writer.get_extra_info("peername")
         try:
-            permitted = peer and ipaddress.ip_address(peer[0]) == self.allowed_source
+            permitted = peer and ipaddress.ip_address(peer[0]) in self.allowed_sources
         except ValueError:
             permitted = False
-        if not permitted or self.connections >= 8:
+        if not permitted or self.connections >= max(8, len(self.allowed_sources) * 2):
             self.stats["rejected"] += 1
             writer.close()
             await writer.wait_closed()
@@ -75,6 +87,7 @@ class Receiver:
                     if event is None:
                         self.stats["ignored"] += 1
                     else:
+                        event["_source"] = str(ipaddress.ip_address(peer[0]))
                         await self.queue.put(event)
             if buffer:
                 self.stats["rejected"] += 1  # Never store a truncated frame on disconnect.
@@ -91,7 +104,9 @@ class Receiver:
 
 @asynccontextmanager
 async def lifespan(app):
-    source = os.environ.get("MIKROTIK_ALLOWED_SOURCE", "")
+    source = os.environ.get("MIKROTIK_ALLOWED_SOURCES") or os.environ.get(
+        "MIKROTIK_ALLOWED_SOURCE", ""
+    )
     if not source:
         raise RuntimeError("Configure the allowed private MikroTik source")
     try:
@@ -146,6 +161,9 @@ async def metrics():
         "queued": receiver.queue.qsize(),
         "connections": receiver.connections,
         "persisted_by_kind": receiver.persisted_by_kind,
+        "persisted_by_source_kind": receiver.persisted_by_source_kind,
+        "instance_id": receiver.instance_id,
+        "revision": os.environ.get("APP_REVISION", "unknown"),
     }
 
 

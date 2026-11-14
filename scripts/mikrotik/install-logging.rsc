@@ -3,12 +3,23 @@
 # RouterOS 7.24.5. Apply by the network team, after checking the receiver health.
 # Sends native CEF over TCP on the private network. No PPP profiles/users are changed.
 # Do not enable debug/packet logging: only the requested informational events are selected.
-:local destination "192.168.15.25"
-:local source "192.168.15.1"
+# BEGIN CONFIG - adapt these values, or generate from deploy/profiles/example.json.
+:local destination "CHANGE_ME_RECEIVER_IP"
+:local source "CHANGE_ME_ROUTER_IP"
 :local port 5514
 :local actionName "logsaiPrivate"
 :local pppPrefix "logs-ai-ppp: "
 :local adminPrefix "logs-ai-admin: "
+# END CONFIG - keep prefixes unchanged: they are part of the parser contract.
+
+:if (([:typeof [:toip $destination]] != "ip") || ([:typeof [:toip $source]] != "ip")) do={
+    :error "logs-ai: configure destination/source IPv4 addresses before import"
+}
+:if (([:len $actionName] = 0) || ([:len $actionName] > 32) || \
+     ($actionName ~ "[^a-zA-Z0-9]")) do={
+    :error "logs-ai: actionName must contain only letters/numbers, maximum 32"
+}
+:if (($port < 1) || ($port > 65535)) do={ :error "logs-ai: invalid TCP port" }
 
 :local actionIds [/system logging action find where name=$actionName]
 :if ([:len $actionIds] > 1) do={ :error "logs-ai: ambiguous logging action; inspect manually" }
@@ -36,13 +47,18 @@
         :if ([/system logging get $ruleId action] != $actionName) do={
             :error "logs-ai: prefix is used by another action; no settings were overwritten"
         }
-        :local topics [:tostr [/system logging get $ruleId topics]]
-        :if (($rulePrefix = $pppPrefix) && ($topics != "ppp,info") && ($topics != "ppp;info")) do={
-            :error "logs-ai: existing PPP rule differs; inspect manually"
+        :local actualTopics [/system logging get $ruleId topics]
+        :local expectedTopics {"ppp";"info"}
+        :if ($rulePrefix = $adminPrefix) do={ :set expectedTopics {"system";"info";"!ppp"} }
+        :if ([:len $actualTopics] != [:len $expectedTopics]) do={
+            :error "logs-ai: existing rule topics differ; inspect manually"
         }
-        :if (($rulePrefix = $adminPrefix) && ($topics != "system,info,!ppp") && \
-             ($topics != "system;info;!ppp")) do={
-            :error "logs-ai: existing administrative rule differs; inspect manually"
+        :foreach requiredTopic in=$expectedTopics do={
+            :local topicFound false
+            :foreach actualTopic in=$actualTopics do={
+                :if ($actualTopic = $requiredTopic) do={ :set topicFound true }
+            }
+            :if ($topicFound = false) do={ :error "logs-ai: existing rule topics differ; inspect manually" }
         }
     }
 }

@@ -219,3 +219,48 @@ def test_database_failure_keeps_event_for_retry_without_logging_raw_data(capsys)
     asyncio.run(scenario())
     output = capsys.readouterr()
     assert "synthetic-sensitive" not in output.out + output.err
+
+
+def test_multiple_routers_keep_the_real_peer_during_database_retry():
+    async def scenario():
+        stored, failed = [], False
+
+        def persist(event, source):
+            nonlocal failed
+            if source == "127.0.0.2" and not failed:
+                failed = True
+                raise OSError("synthetic unavailable database")
+            stored.append((event["attributes"]["username"], source))
+
+        receiver = Receiver("127.0.0.1,127.0.0.2", persist=persist)
+        worker = asyncio.create_task(receiver.consume())
+        server = await asyncio.start_server(receiver.handle, "127.0.0.1", 0)
+        port = server.sockets[0].getsockname()[1]
+        for source, name in [("127.0.0.2", "second"), ("127.0.0.1", "first")]:
+            _, writer = await asyncio.open_connection("127.0.0.1", port, local_addr=(source, 0))
+            writer.write(f"ppp,info {name} logged in\n".encode())
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+        for _ in range(100):
+            if receiver.stats["received"] == 2:
+                break
+            await asyncio.sleep(0.01)
+        await asyncio.wait_for(receiver.queue.join(), timeout=5)
+        assert set(stored) == {("second", "127.0.0.2"), ("first", "127.0.0.1")}
+        assert receiver.persisted_by_source_kind == {
+            "127.0.0.1": {"pppoe.session.started": 1},
+            "127.0.0.2": {"pppoe.session.started": 1},
+        }
+        server.close()
+        await server.wait_closed()
+        worker.cancel()
+        await asyncio.gather(worker, return_exceptions=True)
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("sources", ["", "127.0.0.1,", "127.0.0.1,127.0.0.1", "10.0.0.0/8"])
+def test_source_allowlist_requires_distinct_exact_addresses(sources):
+    with pytest.raises(ValueError):
+        Receiver(sources)

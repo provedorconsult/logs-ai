@@ -38,6 +38,27 @@ jobs:
       - run: uv run --no-sync pytest -q
       - run: uv export --locked --no-dev --no-emit-project --format requirements-txt | diff requirements.txt -
       - run: docker build --build-arg APP_REVISION=${{ github.sha }} -t logs-ai:${{ github.sha }} .
+      - name: Prepare disposable installation bundle
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p work
+          python3 - <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          sys.path.insert(0, "scripts")
+          from prepare_installation import prepare
+          profile = json.loads(Path("deploy/profiles/example.json").read_text())
+          profile["server"].update(syslog_port=15514, core_port=18010, collector_port=18012)
+          prepare(profile, os.environ["RELEASE_SHA"], Path("work/installation-ci"))
+          PY
+      - name: Standalone installation readiness
+        env:
+          RECEIVER_BIND: '127.0.0.1'
+          DOKPLOY_TRANSPORT: direct
+        run: |
+          docker compose -p logs-ai-install-ci --env-file work/installation-ci/.env -f work/installation-ci/docker-compose.yml up -d --no-build --wait --wait-timeout 120
+          python3 scripts/verify_installation.py baseline --manifest work/installation-ci/manifest.json --output work/installation-baseline.json
       - name: Compose readiness
         env:
           APP_IMAGE: logs-ai:${{ github.sha }}
@@ -55,6 +76,14 @@ jobs:
         env:
           POSTGRES_PASSWORD: disposable_ci_only
         run: docker compose -p logs-ai-smoke down -v
+      - name: Clean disposable installation stack
+        if: always()
+        env:
+          RECEIVER_BIND: '127.0.0.1'
+        run: |
+          if [ -f work/installation-ci/.env ]; then
+            docker compose -p logs-ai-install-ci --env-file work/installation-ci/.env -f work/installation-ci/docker-compose.yml down -v
+          fi
   deploy:
     permissions:
       contents: write

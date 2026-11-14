@@ -1,0 +1,59 @@
+{
+  "name": "${LOGS_AI_INSTANCE:?configure instance}",
+  "services": {
+    "postgres": {
+      "image": "postgres:17-bookworm",
+      "environment": {
+        "POSTGRES_DB": "logs_ai",
+        "POSTGRES_USER": "logs_ai",
+        "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD:?configure protected password}"
+      },
+      "volumes": ["postgres_data:/var/lib/postgresql/data"],
+      "healthcheck": {
+        "test": ["CMD-SHELL", "pg_isready -U logs_ai -d logs_ai"],
+        "interval": "5s", "timeout": "3s", "retries": 12
+      },
+      "restart": "unless-stopped"
+    },
+    "core": {
+      "image": "logs-ai:${APP_REVISION:?configure full commit SHA}",
+      "build": {
+        "context": "https://github.com/provedorconsult/logs-ai.git#${APP_REVISION:?configure full commit SHA}",
+        "args": {"APP_REVISION": "${APP_REVISION:?configure full commit SHA}"}
+      },
+      "environment": {
+        "DATABASE_URL": "postgresql://logs_ai:${POSTGRES_PASSWORD:?configure protected password}@postgres:5432/logs_ai"
+      },
+      "ports": ["${HEALTH_BIND:-127.0.0.1}:${CORE_PORT:-18000}:8000/tcp"],
+      "depends_on": {"postgres": {"condition": "service_healthy"}},
+      "read_only": true, "tmpfs": ["/tmp"], "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "mem_limit": "256m", "cpus": 0.5, "restart": "unless-stopped"
+    },
+    "collector": {
+      "image": "logs-ai:${APP_REVISION:?configure full commit SHA}",
+      "build": {
+        "context": "https://github.com/provedorconsult/logs-ai.git#${APP_REVISION:?configure full commit SHA}",
+        "args": {"APP_REVISION": "${APP_REVISION:?configure full commit SHA}"}
+      },
+      "command": ["python", "-m", "logs_ai.collector"],
+      "environment": {
+        "DATABASE_URL": "postgresql://logs_ai:${POSTGRES_PASSWORD:?configure protected password}@postgres:5432/logs_ai",
+        "MIKROTIK_ALLOWED_SOURCES": "${MIKROTIK_ALLOWED_SOURCES:?configure router addresses}"
+      },
+      "ports": [
+        "${RECEIVER_BIND:?configure private IP}:${SYSLOG_PORT:-5514}:5514/tcp",
+        "${HEALTH_BIND:-127.0.0.1}:${COLLECTOR_PORT:-18002}:8001/tcp"
+      ],
+      "depends_on": {"postgres": {"condition": "service_healthy"}},
+      "healthcheck": {
+        "test": ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=4)"],
+        "interval": "15s", "timeout": "5s", "start_period": "30s", "retries": 3
+      },
+      "read_only": true, "tmpfs": ["/tmp"], "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "mem_limit": "256m", "cpus": 0.5, "restart": "unless-stopped"
+    }
+  },
+  "volumes": {"postgres_data": {}}
+}

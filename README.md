@@ -1,8 +1,16 @@
 # logs-ai
 
 Fundação do coletor de logs: API Python/FastAPI, PostgreSQL 17, migrations SQL e
-homologação com Docker Compose. G02 corresponde à Fase 1; ingestão e IA pertencem
-à G03 e ainda não estão implementadas.
+homologação com Docker Compose. G02 corresponde à Fase 1. A ingestão MikroTik TCP/CEF é um incremento da G03;
+IA e dashboard ainda não estão implementados.
+
+## Instalar outro servidor ou MikroTik
+
+Comece pelo [guia de novo servidor](docs/NEW-SERVER.md) e pelo
+[catálogo de skills para agentes](docs/SKILLS.md). Um perfil gera Compose com
+PostgreSQL dedicado, core/coletor e scripts RouterOS por roteador, com senha
+aleatória privada e fonte fixada em SHA completo. O verificador exige eventos
+novos por origem e tipo. Há também um [runbook das falhas corrigidas](docs/RUNBOOK.md).
 
 ## Desenvolvimento
 

@@ -12,6 +12,18 @@
 - Ingestão é o incremento autorizado da G03; não inclui IA nem aceite integral
   de G01/G02/G03.
 
+## Reutilizar em outro servidor/roteador
+
+O [guia de novo servidor](NEW-SERVER.md) gera pacote completo por perfil e scripts
+por origem. Os `.rsc` no repositório agora usam placeholders obrigatórios no bloco
+`BEGIN CONFIG`; não importar sem adaptar. Para esta instalação histórica, os
+artefatos exatos estão nos commits registrados em `MIKROTIK-VALIDATION.md`.
+O novo coletor aceita `MIKROTIK_ALLOWED_SOURCES` (IPs exatos separados por vírgula,
+até 32), preservando compatibilidade com `MIKROTIK_ALLOWED_SOURCE`. Eventos são
+atribuídos ao peer real; métricas por origem e identidade de processo permitem
+comissionamento sem reutilizar contadores antigos. O contrato novo exige deploy
+planejado; a instância histórica não foi atualizada só para publicar este guia.
+
 ## Serviço Dokploy
 
 `deploy/mikrotik.compose.yml` configura um componente `collector` separado do
@@ -33,7 +45,7 @@ Variáveis protegidas do componente:
 | `APP_REVISION` | SHA completo do código construído. |
 | `DATABASE_URL` | Conexão protegida com o PostgreSQL dedicado existente. Não imprimir. |
 | `LOGS_AI_DATABASE_NETWORK` | Rede Docker compartilhada exclusivamente com o core/banco logs-ai. |
-| `MIKROTIK_ALLOWED_SOURCE` | Origem permitida: IP privado do MikroTik. |
+| `MIKROTIK_ALLOWED_SOURCES` | Origens privadas exatas, separadas por vírgula. O Compose também aceita a variável singular histórica como fallback. |
 | `MIKROTIK_BIND_HOST` | IP privado da VPS; publicação TCP/5514. |
 | `COLLECTOR_HEALTH_BIND` | IP administrativo autorizado ou loopback; não usar wildcard público. |
 | `COLLECTOR_HEALTH_PORT` | Porta HTTP de saúde, padrão 18002. |
