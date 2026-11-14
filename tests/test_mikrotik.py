@@ -94,8 +94,11 @@ def test_cef_extension_does_not_retain_secrets():
         ),
     ],
 )
-def test_native_hardware_product_cef(topics, message, kind):
+@pytest.mark.parametrize("routeros_separator", [False, True])
+def test_native_hardware_product_cef(topics, message, kind, routeros_separator):
     # Header shape observed on RouterOS 7.24.5; identities/messages are synthetic.
+    if routeros_separator:
+        message = message.replace(": ", ": : ", 1)
     frame = (
         f"<134>Nov 13 21:00:00 router CEF:0|MikroTik|CCR2116-12G-4S+|"
         f"7.24.5 (stable)|10|{topics}|Low|dvchost=router dvc=192.0.2.10 "
@@ -105,6 +108,12 @@ def test_native_hardware_product_cef(topics, message, kind):
     assert event["attributes"]["event_kind"] == kind
     assert "do-not-store" not in json.dumps(event)
     assert "dvchost" not in json.dumps(event)
+    assert event["attributes"].get("username", "alice") == "alice"
+    assert event["attributes"].get("actor", "operator") == "operator"
+
+
+def test_system_login_cannot_be_misclassified_as_pppoe():
+    assert normalize(b"system,info unexpected-prefix user operator logged in") is None
 
 
 @pytest.mark.parametrize("vendor,product", [("Other", "CCR2116-12G-4S+"), ("MikroTik", "Unknown")])

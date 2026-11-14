@@ -90,3 +90,18 @@ cobrem cabeçalho nativo e rejeição de fabricante/produto desconhecido.
 157 testes passaram com PostgreSQL 17 descartável; Ruff passou. O teste de
 pipeline TCP/PostgreSQL também usa o cabeçalho nativo com identidades sintéticas.
 Novo deploy e evidência de eventos reais serão registrados após a implantação.
+
+## Separador adicional de prefixo RouterOS
+
+O primeiro deploy de compatibilidade CEF (`e9cba0d`, CI 43543015457 aprovada)
+recebeu eventos reais e gravou início/fim de sessão. A inspeção adicional mostrou
+que RouterOS acrescenta `: ` ao prefixo configurado, produzindo
+`logs-ai-admin: : user ...` e `logs-ai-ppp: : ...`. Isso impedia autenticação e
+mudanças administrativas e podia classificar login/logout administrativo como
+PPP, além de manter `: ` no identificador PPP. Essa implantação não valida todos
+os tipos solicitados e não deve servir como evidência de classificação correta.
+
+Parser corrigido para aceitar o separador nativo, sem exigir mudança no roteador;
+classificação PPP exige tópico PPP/PPPoE. Regressões cobrem os dois formatos de
+prefixo e impedem classificar mensagens system como PPP. Registros produzidos
+antes da correção precisam de reconciliação identificável; não apagar eventos.

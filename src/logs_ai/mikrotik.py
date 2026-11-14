@@ -92,7 +92,9 @@ def normalize(frame):
             topics.add("ppp")
         elif body.startswith("logs-ai-admin:"):
             topics.add("system")
-        body = re.sub(r"^logs-ai(?:-ppp|-admin)?:\s*", "", body).strip()
+        # RouterOS inserts its own ':' after the configured prefix, even when
+        # that prefix already ends in ': '. Accept both wire representations.
+        body = re.sub(r"^logs-ai(?:-ppp|-admin)?:\s*(?::\s*)?", "", body).strip()
     attrs = {"topics": sorted(topics)}
     if timestamp:
         attrs["router_time"] = timestamp[1]
@@ -122,10 +124,10 @@ def normalize(frame):
         if admin and "ppp" not in topics:
             kind = "routeros.admin." + ("login" if admin[2].lower() == "in" else "logout")
             attrs["actor"] = safe_name(admin[1])
-        elif login:
+        elif login and ({"ppp", "pppoe"} & topics):
             kind = "pppoe.session." + ("started" if login[2].lower() == "in" else "ended")
             attrs["username"] = safe_name(login[1].rstrip(":"))
-        elif link:
+        elif link and ({"ppp", "pppoe"} & topics):
             kind = (
                 "pppoe.authenticated"
                 if link[2].lower() == "authenticated"

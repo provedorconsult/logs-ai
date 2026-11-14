@@ -124,7 +124,7 @@ def test_mikrotik_tcp_to_real_postgresql_pipeline():
         frames = [
             (
                 b"CEF:0|MikroTik|CCR2116-12G-4S+|7.24.5 (stable)|10|ppp,info|Low|"
-                b"msg=logs-ai-ppp: <pppoe-synthetic>: authenticated app=ppp"
+                b"msg=logs-ai-ppp: : <pppoe-synthetic>: authenticated app=ppp"
             ),
             b"ppp,info logs-ai-ppp: synthetic logged out, 60 1000 2000",
             (
