@@ -1,8 +1,12 @@
 # syntax=docker/dockerfile:1
+FROM ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 AS uv
+
 FROM python:3.12-slim-bookworm AS builder
 WORKDIR /build
-COPY requirements.txt ./
-COPY pyproject.toml ./
+COPY --from=uv /uv /usr/local/bin/uv
+COPY pyproject.toml uv.lock ./
+RUN UV_PYTHON_DOWNLOADS=never uv export --locked --no-dev --no-emit-project \
+    --format requirements-txt > requirements.txt
 COPY src ./src
 RUN --mount=type=secret,id=proxy_ca \
     PIP_CERT=${PIP_CERT:-/run/secrets/proxy_ca} \

@@ -46,7 +46,7 @@ mecanismos; a política exigida pelo cliente não está estabelecida. A conexão
 atual declara `push=true`, `admin=false`, `maintain=false`, e não há ferramenta
 conectada para administrar rulesets.
 
-Foi preparado [g02-tag-ruleset.json](g02-tag-ruleset.json), com regras ativas
+Foi preparado [g02-tag-ruleset.json](../g02-tag-ruleset.json), com regras ativas
 contra update e deletion de `refs/tags/logs-ai-deploy-*`, sem bypass. Um
 administrador deve revisar as regras existentes e aplicar esse payload pela
 API de rulesets ou configurar política equivalente no GitHub. Não se solicita
@@ -56,7 +56,7 @@ Enquanto a política e sua leitura pela identidade do runner não forem
 comprovadas, **novos deploys pelo cliente corrigido são recusados**. O ambiente
 de execução também precisa permitir HTTPS a `api.github.com`; o conector desta
 análise não substitui acesso do runner. Um flag declaratório não satisfaz essa
-verificação. A configuração exata de transporte está em [G02.md](G02.md).
+verificação. A configuração exata de transporte está em [G02.md](../G02.md).
 
 ## Validação e estado remoto
 

@@ -4,6 +4,9 @@ Fundação do coletor de logs: API Python/FastAPI, PostgreSQL 17, migrations SQL
 homologação com Docker Compose. G02 corresponde à Fase 1. A ingestão MikroTik TCP/CEF é um incremento da G03;
 IA e dashboard ainda não estão implementados.
 
+A documentação vigente está no [índice operacional](docs/README.md);
+auditorias e resultados por versão estão em [docs/audits](docs/audits/README.md).
+
 ## Instalar outro servidor ou MikroTik
 
 Comece pelo [guia de novo servidor](docs/NEW-SERVER.md) e pelo
@@ -27,7 +30,9 @@ Os testes de integração exigem `TEST_DATABASE_URL` apontando para banco
 **descartável**, com nome terminado em `_ci` ou `_test`; eles apagam o schema
 `public`. Sem essa variável, esses testes são explicitamente pulados.
 As dependências estão fixadas em `uv.lock`; `requirements.txt` é exportado do lock
-com hashes para a imagem. Após atualização intencional de dependências:
+com hashes como artefato derivado. O Docker usa uv 0.13.6 e exporta diretamente
+de `uv.lock` com `--locked` durante o build; a CI verifica a exportação versionada.
+Não editar `requirements.txt` manualmente. Após atualização intencional de dependências:
 
 ```sh
 uv lock

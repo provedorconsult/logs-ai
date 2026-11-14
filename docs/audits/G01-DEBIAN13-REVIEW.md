@@ -34,7 +34,7 @@ Essas confirmações não equivalem a testes independentes dos controles.
 ## Próxima etapa: preparar G01_FINAL_VALIDATION
 
 Antes de qualquer alteração remota, apresentar plano concreto e obter aprovação
-conforme [AGENTS.md](../AGENTS.md). A sequência proposta para esse plano é:
+conforme [AGENTS.md](../../AGENTS.md). A sequência proposta para esse plano é:
 
 1. Validar transporte administrativo por túnel SSH ou HTTPS validado, operação
    autenticada do Dokploy e saúde/autenticação do PostgreSQL.
@@ -48,7 +48,7 @@ conforme [AGENTS.md](../AGENTS.md). A sequência proposta para esse plano é:
 
 A ordem de execução final deve respeitar dependências, riscos e escopo aprovado;
 esta lista não autoriza reinícios, mudanças de firewall ou restaurações.
-Consultar também [HARNESS.md](HARNESS.md).
+Consultar também [HARNESS.md](../HARNESS.md).
 
 ## Atualização de governança — 13/11/2026
 

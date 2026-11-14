@@ -140,3 +140,10 @@ padronizar o repositório e criar skills de instalação/validação; não ident
 outro servidor a provisionar nesta rodada. Contexto, IPs e exceções do ambiente
 histórico não são defaults globais. Preservar decisões humanas vigentes por
 alvo e distinguir instalação nova, atualização e evidência de aceite.
+
+
+Em 14/11/2026, o responsável autorizou confrontar a auditoria estrutural de
+`88cd827b`, implementar correções e realizar commit, merge e deploy. A autorização
+permite a entrega no projeto existente, sem converter registros do Maker em
+parecer independente de G01 nem remover as restrições vigentes do MikroTik.
+Documentação ativa em `docs/README.md`; relatórios em `docs/audits/README.md`.

@@ -15,7 +15,7 @@ planejada para usar o novo verificador. Não fazer fallback que declare PASS.
 
 Executar Ruff, formatação e pytest. Usar PostgreSQL 17 **descartável** com
 `TEST_DATABASE_DISPOSABLE=true`, porta esperada explícita e nome terminado em
-`_ci`/`_test`; ler `tests/database_guard.py` antes. Sem banco, testes pulados não
+`_ci`/`_test`; ler `tests/helpers/database_guard.py` antes. Sem banco, testes pulados não
 comprovam integração. CI precisa testar/buildar a revisão efetivamente implantada.
 
 ## Evidência remota

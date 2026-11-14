@@ -44,7 +44,7 @@ seguro; token/chave não devem ser enviados pelo chat.
 
 O workflow de CI/CD foi incluído, mas sua execução no GitHub e o job de deploy
 não foram comprovados neste registro. O deploy exige habilitação e configuração
-explicadas em [G02.md](G02.md). Não há evidência remota de réplicas `1/1`,
+explicadas em [G02.md](../G02.md). Não há evidência remota de réplicas `1/1`,
 `pg_isready`, readiness, persistência ou rollback da aplicação nesta entrega.
 O ensaio local não comprova persistência após reboot da VPS, backup/restauração,
 perímetro, carga ou prontidão de produção. Hermes e Devs Humanos ainda precisam

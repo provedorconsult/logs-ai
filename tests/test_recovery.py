@@ -1,7 +1,8 @@
 import copy
 
 import pytest
-from test_deploy import configure_deploy, deploy
+
+from tests.test_deploy import configure_deploy, deploy
 
 
 @pytest.fixture(autouse=True)

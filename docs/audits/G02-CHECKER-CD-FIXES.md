@@ -21,7 +21,7 @@ nem amplia permissões efetivas da conexão GitHub.
 
 ## Reconciliação segura
 
-O procedimento completo está em [G02.md](G02.md). Configurar
+O procedimento completo está em [G02.md](../G02.md). Configurar
 `DOKPLOY_RECOVERY_FILE` em armazenamento privado durável fora do checkout e
 de `RUNNER_TEMP` no runner. O cliente recusa esses locais descartáveis no
 Actions. O arquivo é 0600 e contém ambiente completo, inclusive segredos:

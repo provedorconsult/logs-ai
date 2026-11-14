@@ -2,9 +2,10 @@ import socket
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-import database_guard
 import pytest
-from database_guard import connect_test_database, validate_test_database
+
+from tests.helpers import database_guard
+from tests.helpers.database_guard import connect_test_database, validate_test_database
 
 
 @pytest.fixture(autouse=True)

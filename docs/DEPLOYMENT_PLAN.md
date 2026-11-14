@@ -46,7 +46,7 @@ Infraestrutura de referência informada: Debian 13, Docker 29.9.3 Swarm,
 Compose v5.7.1 e Dokploy v0.31.1.
 
 A consolidação da evidência e as pendências para Debian 13 estão em
-[G01-DEBIAN13-REVIEW.md](G01-DEBIAN13-REVIEW.md). A próxima etapa é preparar
+[G01-DEBIAN13-REVIEW.md](audits/G01-DEBIAN13-REVIEW.md). A próxima etapa é preparar
 a validação final da G01 em paralelo ao avanço autorizado de G02.
 
 ## Fase 1 — Fundação & Core Pipeline
@@ -92,3 +92,20 @@ Registrar hash, imagem, implantação, migrations, resultado dos testes e últim
 versão saudável. Regressões bloqueantes exigem rollback ou correção imediata,
 com nova execução do harness. O rollback deve respeitar a compatibilidade do
 schema e o procedimento de restauração do banco.
+
+## Estado entregue e escopo autorizado — 14/11/2026
+
+A matriz de fases acima permanece válida. A autorização humana posterior para
+integração MikroTik permitiu antecipar **um incremento da G03**, sem renomeá-lo
+como G02 nem conceder aceite integral de uma fase.
+
+| Fase | Implementação/evidência atual | Pendência |
+| --- | --- | --- |
+| G01 | Bootstrap relatado e revisão documental histórica. | [Parecer independente final](audits/G01-CHECKER-VALIDATION.md), persistência/recuperação e controles completos não estabelecidos. |
+| G02 | Core FastAPI/PostgreSQL/migrations, build, health e primeiro deploy; [evidências](audits/G02-VALIDATION.md). | Aceite independente integral e CD efetiva, incluindo gates técnicos do caminho legado. |
+| G03 — incremento de ingestão | Coletor TCP/CEF, normalização PPPoE/auditoria e eventos reais de `/user` e `/ppp secret`; [histórico](audits/MIKROTIK-VALIDATION.md). | IA/LLM, detecção de anomalias e aceite integral da fase não implementados/estabelecidos. |
+| Padronização operacional | Perfis, pacote novo completo, scripts por roteador, skills e verificador; [testes](audits/NEW-SERVER-VALIDATION.md). | Bootstrap em nova VPS e comissionamento de cada novo destino precisam de evidências próprias. |
+
+A reorganização dos relatórios está no [índice de auditorias](audits/README.md).
+O [índice ativo](README.md) distingue procedimentos vigentes de resultados
+históricos. O sucesso funcional da ingestão não fecha G01/G02/G03 ou CD.

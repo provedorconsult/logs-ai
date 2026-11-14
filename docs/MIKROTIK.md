@@ -17,7 +17,7 @@
 O [guia de novo servidor](NEW-SERVER.md) gera pacote completo por perfil e scripts
 por origem. Os `.rsc` no repositório agora usam placeholders obrigatórios no bloco
 `BEGIN CONFIG`; não importar sem adaptar. Para esta instalação histórica, os
-artefatos exatos estão nos commits registrados em `MIKROTIK-VALIDATION.md`.
+artefatos exatos estão nos commits registrados em `audits/MIKROTIK-VALIDATION.md`.
 O novo coletor aceita `MIKROTIK_ALLOWED_SOURCES` (IPs exatos separados por vírgula,
 até 32), preservando compatibilidade com `MIKROTIK_ALLOWED_SOURCE`. Eventos são
 atribuídos ao peer real; métricas por origem e identidade de processo permitem
@@ -115,7 +115,7 @@ rodar em contêiner temporário não privilegiado na VPS, removido ao final.
 ## Validação desta entrega
 
 Registro de implementação, build, deploy e verificações observadas será mantido
-em [MIKROTIK-VALIDATION.md](MIKROTIK-VALIDATION.md). Aplicação dos scripts e
+em [MIKROTIK-VALIDATION.md](audits/MIKROTIK-VALIDATION.md). Aplicação dos scripts e
 validação de eventos reais pertencem ao acompanhamento com a equipe de redes;
 testes sintéticos não substituem esse passo.
 

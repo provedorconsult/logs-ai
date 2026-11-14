@@ -30,5 +30,5 @@
    de recurso/capability/credenciais temporários ao final. Não é requisito do
    caminho normal de instalação.
 
-O histórico detalhado está em `MIKROTIK-VALIDATION.md` e nos relatórios G02.
+O histórico detalhado está em `audits/MIKROTIK-VALIDATION.md` e nos relatórios G02.
 As evidências são observações por versão, não garantia sobre ambientes futuros.

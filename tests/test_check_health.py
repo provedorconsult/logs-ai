@@ -3,7 +3,8 @@ import json
 from pathlib import Path
 
 import pytest
-from test_transport import listener
+
+from tests.test_transport import listener
 
 spec = importlib.util.spec_from_file_location("check_health", Path("scripts/check_health.py"))
 health = importlib.util.module_from_spec(spec)

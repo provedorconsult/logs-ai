@@ -4,11 +4,11 @@ import os
 
 import psycopg
 import pytest
-from database_guard import connect_test_database, validate_test_database
 from fastapi.testclient import TestClient
 
 from logs_ai.main import app
 from logs_ai.migrate import migrate
+from tests.helpers.database_guard import connect_test_database, validate_test_database
 
 pytestmark = pytest.mark.skipif(
     not os.environ.get("TEST_DATABASE_URL"), reason="Set TEST_DATABASE_URL to a disposable database"

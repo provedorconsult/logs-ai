@@ -2,7 +2,7 @@
 
 Este é o caminho reproduzível para **uma instalação nova**. Leia `AGENTS.md` e
 [SKILLS.md](SKILLS.md). O estado de referência e as evidências históricas estão
-em [MIKROTIK-VALIDATION.md](MIKROTIK-VALIDATION.md); os IDs, IPs, tokens e exceções
+em [MIKROTIK-VALIDATION.md](audits/MIKROTIK-VALIDATION.md); os IDs, IPs, tokens e exceções
 daquele servidor não são defaults para novas instalações.
 
 ## Escolher o caminho
@@ -166,5 +166,5 @@ integrado. Habilitação exige execução observada e recuperação validada.
 
 ## Evidências desta padronização
 
-Ver [NEW-SERVER-VALIDATION.md](NEW-SERVER-VALIDATION.md) para testes observados,
+Ver [NEW-SERVER-VALIDATION.md](audits/NEW-SERVER-VALIDATION.md) para testes observados,
 limitações e distinção entre validação local, sintaxe RouterOS e instalação real.
