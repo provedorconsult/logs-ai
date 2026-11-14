@@ -262,7 +262,7 @@ def dashboard(request: Request, days: int = 1):
         "trend": trend,
         "sources": sources,
         "kinds": kinds,
-        "recent": recent,
+        "recent": reports.enrich_sources(recent),
         "configured_clients": configured,
         "days": days,
         "generated_at": end,
@@ -287,7 +287,11 @@ def report_options(request: Request):
             "_events WHERE attributes ? 'event_kind' ORDER BY kind LIMI"
             "T 80"
         ).fetchall()
-    return {"sources": [r["source"] for r in sources], "kinds": [r["kind"] for r in kinds]}
+    return {
+        "sources": [r["source"] for r in sources],
+        "source_names": reports.source_names(),
+        "kinds": [r["kind"] for r in kinds],
+    }
 
 
 @app.get("/api/reports/export/{format}")

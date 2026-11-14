@@ -14,12 +14,29 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from logs_ai.web.db import logs
+from logs_ai.web.db import logs, metadata
 
 COLUMNS = (
     "id,received_at,source,severity,message,attributes->>'event_kind' AS event_kind,"
-    "attributes->>'username' AS username,attributes->>'actor' AS actor"
+    "attributes->>'username' AS username,attributes->>'actor' AS actor,"
+    "CASE WHEN left(attributes->>'event_kind',6) = 'pppoe.' "
+    "THEN attributes->>'address' END AS pppoe_ip"
 )
+
+
+def source_names():
+    with metadata() as conn:
+        return {
+            "mikrotik:" + row["ip"]: row["name"]
+            for row in conn.execute("SELECT host(source_ip) AS ip,name FROM web_clients")
+        }
+
+
+def enrich_sources(rows):
+    names = source_names()
+    for row in rows:
+        row["source_name"] = names.get(row["source"], "Origem não cadastrada")
+    return rows
 
 
 def filters(params):
@@ -90,7 +107,7 @@ def report(params, page=1, page_size=25, export_limit=None):
             values + [limit, offset],
         ).fetchall()
     return {
-        "items": rows,
+        "items": enrich_sources(rows),
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -110,7 +127,17 @@ def csv_bytes(rows):
     stream = io.StringIO(newline="")
     writer = csv.writer(stream)
     writer.writerow(
-        ["ID", "Recebido em (UTC)", "Origem", "Severidade", "Tipo", "Usuário", "Ator", "Mensagem"]
+        [
+            "ID",
+            "Recebido em (UTC)",
+            "Origem",
+            "Severidade",
+            "Tipo",
+            "Usuário",
+            "Ator",
+            "IP PPPoE",
+            "Mensagem",
+        ]
     )
     for row in rows:
         writer.writerow(
@@ -119,11 +146,12 @@ def csv_bytes(rows):
                 for k in (
                     "id",
                     "received_at",
-                    "source",
+                    "source_name",
                     "severity",
                     "event_kind",
                     "username",
                     "actor",
+                    "pppoe_ip",
                     "message",
                 )
             ]
@@ -183,19 +211,29 @@ def pdf_bytes(result, params):
     data = [
         [
             Paragraph(text, normal)
-            for text in ["Recebido (UTC)", "Origem", "Evento", "Usuário / ator", "Mensagem"]
+            for text in [
+                "Recebido (UTC)",
+                "Origem",
+                "Evento",
+                "Usuário / ator",
+                "IP PPPoE",
+                "Mensagem",
+            ]
         ]
     ]
     for row in result["items"]:
         values = [
             row["received_at"].astimezone(UTC).strftime("%d/%m/%Y %H:%M:%S"),
-            row["source"],
+            row.get("source_name", "Origem não cadastrada"),
             row["event_kind"] or "-",
             row["username"] or row["actor"] or "-",
+            row.get("pppoe_ip") or "-",
             row["message"][:400],
         ]
         data.append([Paragraph(escape(str(value)), normal) for value in values])
-    table = Table(data, colWidths=[34 * mm, 43 * mm, 53 * mm, 42 * mm, 95 * mm], repeatRows=1)
+    table = Table(
+        data, colWidths=[34 * mm, 43 * mm, 41 * mm, 42 * mm, 26 * mm, 81 * mm], repeatRows=1
+    )
     table.setStyle(
         TableStyle(
             [

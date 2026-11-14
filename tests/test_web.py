@@ -127,7 +127,10 @@ def test_reports_filters_pagination_csv_pdf_and_no_metadata_secrets():
                         "=synthetic-formula" if i == 0 else "ppp.user.created",
                         Jsonb(
                             {
-                                "event_kind": "ppp.user.created",
+                                "event_kind": "pppoe.session.started"
+                                if i == 0
+                                else "ppp.user.created",
+                                "address": "100.64.1.2",
                                 "username": "synthetic",
                                 "normalization_previous": {"secret": "hidden"},
                             }
@@ -138,11 +141,20 @@ def test_reports_filters_pagination_csv_pdf_and_no_metadata_secrets():
         assert response.status_code == 200, response.text
         assert response.json()["total"] == 30 and len(response.json()["items"]) == 10
         assert "normalization_previous" not in response.text
+        assert response.json()["items"][0]["source_name"] == "MikroTik principal"
+        assert response.json()["items"][0]["pppoe_ip"] is None
         assert client.get("/api/reports?q=nosuchvalue").json()["total"] == 0
         assert client.get("/api/reports?q=%25").json()["total"] == 0
         csv = client.get("/api/reports/export/csv")
         assert csv.status_code == 200, csv.text
         assert "'=synthetic-formula" in csv.text
+        assert "IP PPPoE" in csv.text and "MikroTik principal" in csv.text
+        assert "100.64.1.2" in csv.text
+        assert (
+            client.get("/api/reports?q=synthetic-formula").json()["items"][0]["pppoe_ip"]
+            == "100.64.1.2"
+        )
+        assert "mikrotik:192.168.50.1" not in csv.text
         assert csv.headers["x-export-truncated"] == "false"
         pdf = client.get("/api/reports/export/pdf")
         assert pdf.status_code == 200, pdf.text[:100]

@@ -44,6 +44,12 @@ await page.screenshot({
 });
 await page.getByRole("link", { name: "Relatórios", exact: true }).click();
 await page.locator("#results-card tbody tr").first().waitFor();
+const headers = await page.locator("#results-card th").allTextContents();
+if (!headers.includes("IP PPPoE") || headers.includes("Categoria"))
+  throw new Error("Report columns differ from the requested layout");
+const origin = await page.locator("#results-card tbody tr").first().locator("td").nth(1).textContent();
+if (!origin || /192\.168\./.test(origin) || origin.includes("não cadastrada"))
+  throw new Error("Report origin must display the registered name");
 await page.locator("#next-page").click();
 await page.waitForFunction(
   () => document.querySelector(".page-btn.active")?.textContent === "2",

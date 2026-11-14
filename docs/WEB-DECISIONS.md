@@ -52,3 +52,10 @@ pelo Dokploy. Snapshot da configuração antes da correção preservado. O conta
 ACME passou a `contato@canaldoprovedor.net.br`, informado pelo usuário; certificado
 Let's Encrypt emitido para o domínio e validade conferida no armazenamento
 local. A recuperação não alterou firewall/SSH/MikroTik nem o código implantado.
+
+A pedido do usuário após confirmar o acesso público, o relatório principal passa
+a mostrar IP PPPoE e nome cadastrado da origem, sem a coluna Categoria. CSV/PDF
+acompanham nome e IP. O IP vem somente do atributo normalizado `address` em
+um evento PPPoE; eventos sem esse dado mostram traço, sem inferência entre sessões.
+Origens removidas/não cadastradas exibem “Origem não cadastrada”, preservando a
+chave técnica interna para filtros. Nenhum schema ou dado histórico é reescrito.
