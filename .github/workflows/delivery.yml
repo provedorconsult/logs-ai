@@ -36,8 +36,29 @@ jobs:
       - run: uv run --no-sync ruff check .
       - run: uv run --no-sync ruff format --check .
       - run: uv run --no-sync pytest -q
+      - name: Web browser checks
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: |
+          mkdir -p work
+          node --check src/logs_ai/web/static/app.js
+          .venv/bin/python tests/browser/serve.py > work/web-browser-server.log 2>&1 &
+          echo $! > work/web-browser-server.pid
+          npm ci --prefix tests/browser --no-audit --no-fund
+          node tests/browser/web.mjs
+      - name: Stop disposable browser fixture
+        if: always()
+        run: |
+          if [ -f work/web-browser-server.pid ]; then
+            fixture_pid=$(cat work/web-browser-server.pid)
+            case "$(ps -p "$fixture_pid" -o args=)" in
+              *tests/browser/serve.py*) kill "$fixture_pid" ;;
+            esac
+          fi
       - run: uv export --locked --no-dev --no-emit-project --format requirements-txt | diff requirements.txt -
       - run: docker build --build-arg APP_REVISION=${{ github.sha }} -t logs-ai:${{ github.sha }} .
+      - name: Packaged web assets and entrypoint
+        run: docker run --rm logs-ai:${{ github.sha }} python -c "from logs_ai.web.app import STATIC; from pathlib import Path; assert (STATIC / 'app.js').is_file(); assert Path('web_migrations/001_web.sql').is_file()"
       - name: Prepare disposable installation bundle
         env:
           RELEASE_SHA: ${{ github.sha }}

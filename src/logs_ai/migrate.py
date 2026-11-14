@@ -48,5 +48,19 @@ def main():
     print("Migrations applied successfully")
 
 
+def verify(directory: Path | None = None):
+    """Check a pre-migrated schema without DDL, for a least-privilege ingestion role."""
+    root = directory or Path(os.environ.get("MIGRATIONS_DIR", "migrations"))
+    expected = {
+        file.name: hashlib.sha256(file.read_bytes()).hexdigest() for file in root.glob("[0-9]*.sql")
+    }
+    if not expected:
+        raise RuntimeError("No schema checksums available")
+    with connect() as conn:
+        applied = dict(conn.execute("SELECT version,checksum FROM schema_migrations").fetchall())
+    if applied != expected:
+        raise RuntimeError("Schema differs from this release; apply migrations with its owner")
+
+
 if __name__ == "__main__":
     main()

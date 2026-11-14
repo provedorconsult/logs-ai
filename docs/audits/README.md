@@ -16,6 +16,7 @@ pela última data no nome nem tratar resposta do Maker como revisão independent
 | [Correções B](G02-CHECKER-B-FIXES.md) | Resposta do Maker. |
 | [Correções B6](G02-CHECKER-B6-FIXES.md) | Transporte Git/proxy/TLS. |
 | [Correções CD](G02-CHECKER-CD-FIXES.md) | Snapshots, verificação de tags e reconciliação. |
+| [Interface web](WEB-VALIDATION.md) | Testes de autenticação, relatórios, responsividade e implantação. |
 | [Integração MikroTik](MIKROTIK-VALIDATION.md) | Deploy, erros de importação/parsing e eventos reais. |
 | [Pacote para novos servidores](NEW-SERVER-VALIDATION.md) | Testes das ferramentas/skills e limitações de bootstrap. |
 

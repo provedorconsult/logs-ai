@@ -8,6 +8,8 @@ services:
         APP_REVISION: ${APP_REVISION:?configure full commit SHA}
     command: ["python", "-m", "logs_ai.collector"]
     environment:
+      LOGS_SCHEMA_MANAGED_EXTERNALLY: ${LOGS_SCHEMA_MANAGED_EXTERNALLY:-false}
+      CLIENTS_DATABASE_URL: ${CLIENTS_DATABASE_URL:-}
       DATABASE_URL: ${DATABASE_URL:?configure protected logs-ai database URL}
       # Keep defaults separate: Compose eagerly expands nested required defaults.
       # The collector rejects startup when neither allowlist is configured.

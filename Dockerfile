@@ -22,6 +22,9 @@ RUN python -m pip install --no-cache-dir --no-index --find-links=/wheels logs-ai
     && rm -rf /wheels \
     && groupadd --gid 10001 app && useradd --uid 10001 --gid app --no-create-home app
 COPY --chown=10001:10001 migrations ./migrations
+COPY --chown=10001:10001 web_migrations ./web_migrations
+COPY --chown=10001:10001 scripts/mikrotik ./scripts/mikrotik
+COPY --chown=10001:10001 scripts/provision_web_db.py ./scripts/provision_web_db.py
 COPY --chmod=755 scripts/start.sh ./start.sh
 USER 10001:10001
 EXPOSE 8000

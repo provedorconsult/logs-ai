@@ -1,0 +1,28 @@
+# Temporary job only. Remove its environment/resource after verified provisioning.
+services:
+  provision:
+    image: logs-ai-web:${APP_REVISION:?configure full commit SHA}
+    build:
+      context: https://github.com/provedorconsult/logs-ai.git#${APP_REVISION:?configure full commit SHA}
+      args:
+        APP_REVISION: ${APP_REVISION:?configure full commit SHA}
+    command: ["python", "scripts/provision_web_db.py"]
+    environment:
+      WEB_DATABASE_ADMIN_URL: ${WEB_DATABASE_ADMIN_URL:?dedicated logs-ai administrator only}
+      WEB_DB_PASSWORD: ${WEB_DB_PASSWORD:?protected metadata role password}
+      WEB_READER_PASSWORD: ${WEB_READER_PASSWORD:?protected read-only role password}
+      WEB_REGISTRY_PASSWORD: ${WEB_REGISTRY_PASSWORD:?protected registry role password}
+      WEB_INGEST_PASSWORD: ${WEB_INGEST_PASSWORD:?protected ingestion role password}
+    networks: [logs_ai_database]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 256m
+    restart: "no"
+    healthcheck:
+      disable: true
+networks:
+  logs_ai_database:
+    external: true
+    name: ${LOGS_AI_DATABASE_NETWORK:?configure dedicated logs-ai network}

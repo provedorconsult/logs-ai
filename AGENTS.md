@@ -147,3 +147,11 @@ Em 14/11/2026, o responsável autorizou confrontar a auditoria estrutural de
 permite a entrega no projeto existente, sem converter registros do Maker em
 parecer independente de G01 nem remover as restrições vigentes do MikroTik.
 Documentação ativa em `docs/README.md`; relatórios em `docs/audits/README.md`.
+
+Em 14/11/2026, o responsável autorizou implementar e implantar a interface web
+em novo serviço do mesmo projeto/servidor Dokploy, configurar domínio/HTTPS,
+administrador inicial com troca obrigatória de senha e opção de aplicação SSH
+para clientes MikroTik RouterOS 7. Autonomia de decisão foi concedida até a
+conclusão; registrar escolhas em `docs/WEB-DECISIONS.md`. A interface permite ação
+explícita do administrador; não aplicar configuração no roteador de referência
+apenas para testar o produto. Não publicar a senha inicial nem credenciais SSH.

@@ -12,7 +12,7 @@ from psycopg.types.json import Jsonb
 
 from logs_ai.db import connect
 from logs_ai.main import health as database_health
-from logs_ai.migrate import migrate
+from logs_ai.migrate import migrate, verify
 from logs_ai.mikrotik import extract_frames, normalize
 
 
@@ -25,14 +25,22 @@ def store(event, source):
 
 
 class Receiver:
-    def __init__(self, allowed_source, persist=store, queue_size=2048):
-        sources = [value.strip() for value in allowed_source.split(",")]
-        if not 1 <= len(sources) <= 32 or any(not value for value in sources):
+    def __init__(self, allowed_source, persist=store, queue_size=2048, registry=None):
+        self.registry = registry
+        self.registry_failed = False
+        if registry:
+            allowed_source = ",".join(str(ip) for ip in registry.sources())
+        sources = [value.strip() for value in allowed_source.split(",")] if allowed_source else []
+        if (
+            (not registry and not sources)
+            or len(sources) > 32
+            or any(not value for value in sources)
+        ):
             raise ValueError("Configure one to 32 explicit MikroTik source addresses")
         self.allowed_sources = {ipaddress.ip_address(value) for value in sources}
         if len(self.allowed_sources) != len(sources):
             raise ValueError("Duplicate MikroTik source addresses")
-        self.allowed_source = ipaddress.ip_address(sources[0])
+        self.allowed_source = ipaddress.ip_address(sources[0]) if sources else None
         self.instance_id = uuid.uuid4().hex
         self.persist = persist
         self.queue = asyncio.Queue(maxsize=queue_size)
@@ -54,7 +62,7 @@ class Receiver:
                     self.stats["persisted"] += 1
                     kind = event["attributes"]["event_kind"]
                     self.persisted_by_kind[kind] = self.persisted_by_kind.get(kind, 0) + 1
-                    by_source = self.persisted_by_source_kind[source]
+                    by_source = self.persisted_by_source_kind.setdefault(source, {})
                     by_source[kind] = by_source.get(kind, 0) + 1
                     self.database_failed = False
                     self.queue.task_done()
@@ -65,11 +73,23 @@ class Receiver:
                     # Do not log the exception, raw message or connection credentials.
                     await asyncio.sleep(2)
 
+    async def refresh_sources(self):
+        if self.registry:
+            try:
+                self.allowed_sources = await asyncio.to_thread(self.registry.sources)
+                for ip in self.allowed_sources:
+                    self.persisted_by_source_kind.setdefault(str(ip), {})
+                self.registry_failed = False
+            except Exception:
+                self.registry_failed = True
+                raise OSError("Source registry unavailable") from None
+
     async def handle(self, reader, writer):
         peer = writer.get_extra_info("peername")
         try:
+            await self.refresh_sources()
             permitted = peer and ipaddress.ip_address(peer[0]) in self.allowed_sources
-        except ValueError:
+        except (ValueError, OSError):
             permitted = False
         if not permitted or self.connections >= max(8, len(self.allowed_sources) * 2):
             self.stats["rejected"] += 1
@@ -80,6 +100,9 @@ class Receiver:
         buffer = b""
         try:
             while chunk := await reader.read(8192):
+                await self.refresh_sources()
+                if ipaddress.ip_address(peer[0]) not in self.allowed_sources:
+                    raise OSError("Source revoked")
                 frames, buffer = extract_frames(buffer + chunk)
                 for frame in frames:
                     self.stats["received"] += 1
@@ -107,13 +130,17 @@ async def lifespan(app):
     source = os.environ.get("MIKROTIK_ALLOWED_SOURCES") or os.environ.get(
         "MIKROTIK_ALLOWED_SOURCE", ""
     )
-    if not source:
+    registry_url = os.environ.get("CLIENTS_DATABASE_URL", "")
+    if not source and not registry_url:
         raise RuntimeError("Configure the allowed private MikroTik source")
     try:
-        await asyncio.to_thread(migrate)
+        action = verify if os.environ.get("LOGS_SCHEMA_MANAGED_EXTERNALLY") == "true" else migrate
+        await asyncio.to_thread(action)
     except Exception:
         raise RuntimeError("Collector database initialization failed") from None
-    receiver = Receiver(source)
+    from logs_ai.client_registry import ClientRegistry
+
+    receiver = Receiver(source, registry=ClientRegistry(registry_url) if registry_url else None)
     worker = asyncio.create_task(receiver.consume())
     server = await asyncio.start_server(receiver.handle, "0.0.0.0", 5514, backlog=16)
     app.state.receiver = receiver
@@ -143,6 +170,12 @@ app = FastAPI(
 @app.get("/health")
 async def health():
     receiver = app.state.receiver
+    try:
+        await receiver.refresh_sources()
+    except OSError:
+        return JSONResponse(
+            status_code=503, content={"status": "unavailable", "database": "unavailable"}
+        )
     result = await asyncio.to_thread(database_health)
     if receiver.database_failed or receiver.queue.full():
         return JSONResponse(

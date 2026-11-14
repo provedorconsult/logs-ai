@@ -1,0 +1,44 @@
+services:
+  web:
+    image: logs-ai-web:${APP_REVISION:?configure full commit SHA}
+    build:
+      context: https://github.com/provedorconsult/logs-ai.git#${APP_REVISION:?configure full commit SHA}
+      args:
+        APP_REVISION: ${APP_REVISION:?configure full commit SHA}
+    command: ["python", "-m", "logs_ai.web"]
+    environment:
+      WEB_DATABASE_URL: ${WEB_DATABASE_URL:?configure protected metadata database}
+      LOG_DATABASE_URL: ${LOG_DATABASE_URL:?configure read-only logs role}
+      WEB_SESSION_SECRET: ${WEB_SESSION_SECRET:?configure protected session secret}
+      WEB_PUBLIC_ORIGIN: ${WEB_PUBLIC_ORIGIN:?configure validated HTTPS origin}
+      WEB_COOKIE_SECURE: "true"
+      WEB_BOOTSTRAP_USERNAME: ${WEB_BOOTSTRAP_USERNAME:-}
+      WEB_BOOTSTRAP_PASSWORD_HASH: ${WEB_BOOTSTRAP_PASSWORD_HASH:-}
+      WEB_RECEIVER_HOST: ${WEB_RECEIVER_HOST:?configure private receiver IPv4}
+      WEB_SYSLOG_PORT: ${WEB_SYSLOG_PORT:-5514}
+      WEB_SSH_DENY_HOSTS: ${WEB_SSH_DENY_HOSTS:?configure infrastructure addresses}
+      WEB_INITIAL_CLIENT_IP: ${WEB_INITIAL_CLIENT_IP:-}
+      WEB_INITIAL_CLIENT_SSH_PORT: ${WEB_INITIAL_CLIENT_SSH_PORT:-22}
+      WEB_INITIAL_CLIENT_FINGERPRINT: ${WEB_INITIAL_CLIENT_FINGERPRINT:-}
+    expose: ["8080"]
+    networks: [logs_ai_database, dokploy]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 512m
+    cpus: 1.0
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+networks:
+  logs_ai_database:
+    external: true
+    name: ${LOGS_AI_DATABASE_NETWORK:?configure dedicated logs-ai network}
+  dokploy:
+    external: true
+    name: dokploy-network

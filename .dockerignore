@@ -19,3 +19,11 @@
 **/id_ecdsa*
 **/id_dsa*
 **/id_sk*
+
+!web_migrations/
+!web_migrations/*.sql
+!scripts/mikrotik/
+!scripts/mikrotik/install-logging.rsc
+!scripts/mikrotik/remove-logging.rsc
+
+!scripts/provision_web_db.py

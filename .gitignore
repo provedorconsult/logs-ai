@@ -37,3 +37,6 @@ __pycache__/
 dist/
 *.egg-info/
 work/
+
+# Browser test dependencies
+node_modules/

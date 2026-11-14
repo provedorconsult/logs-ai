@@ -8,6 +8,7 @@ não substituem o estado observado da implantação.
 | Governança e autorização | [AGENTS.md](../AGENTS.md) |
 | Fases, escopo entregue e pendências | [DEPLOYMENT_PLAN.md](DEPLOYMENT_PLAN.md) |
 | Novo servidor ou outro MikroTik | [NEW-SERVER.md](NEW-SERVER.md) |
+| Interface web, domínio e autenticação | [WEB.md](WEB.md) |
 | Procedimento e limites MikroTik | [MIKROTIK.md](MIKROTIK.md) |
 | Skills para agentes | [SKILLS.md](SKILLS.md) |
 | Erros conhecidos | [RUNBOOK.md](RUNBOOK.md) |

@@ -1,4 +1,5 @@
 import asyncio
+import ipaddress
 import json
 
 import pytest
@@ -264,3 +265,39 @@ def test_multiple_routers_keep_the_real_peer_during_database_retry():
 def test_source_allowlist_requires_distinct_exact_addresses(sources):
     with pytest.raises(ValueError):
         Receiver(sources)
+
+
+def test_managed_sources_are_authoritative_and_revoke_existing_streams():
+    class Registry:
+        active = {ipaddress.ip_address("127.0.0.1")}
+
+        def sources(self):
+            return self.active
+
+    async def scenario():
+        registry, stored = Registry(), []
+        receiver = Receiver("127.0.0.2", registry=registry, persist=lambda e, s: stored.append(s))
+        assert str(receiver.allowed_source) == "127.0.0.1"
+        worker = asyncio.create_task(receiver.consume())
+        server = await asyncio.start_server(receiver.handle, "127.0.0.1", 0)
+        port = server.sockets[0].getsockname()[1]
+        _, writer = await asyncio.open_connection("127.0.0.1", port)
+        writer.write(b"ppp,info alice logged in\n")
+        await writer.drain()
+        for _ in range(100):
+            if stored:
+                break
+            await asyncio.sleep(0.01)
+        registry.active = set()
+        writer.write(b"ppp,info alice logged out\n")
+        await writer.drain()
+        await asyncio.sleep(0.05)
+        assert stored == ["127.0.0.1"] and receiver.stats["rejected"] == 1
+        writer.close()
+        await writer.wait_closed()
+        server.close()
+        await server.wait_closed()
+        worker.cancel()
+        await asyncio.gather(worker, return_exceptions=True)
+
+    asyncio.run(scenario())

@@ -109,3 +109,13 @@ como G02 nem conceder aceite integral de uma fase.
 A reorganização dos relatórios está no [índice de auditorias](audits/README.md).
 O [índice ativo](README.md) distingue procedimentos vigentes de resultados
 históricos. O sucesso funcional da ingestão não fecha G01/G02/G03 ou CD.
+
+
+## Incremento de interface G04 autorizado — 14/11/2026
+
+Dashboard, relatórios filtrados/paginados com CSV/PDF, gestão de clientes MikroTik
+e usuários foram autorizados em novo serviço do mesmo projeto Dokploy, com
+domínio/HTTPS e primeiro acesso protegido por troca obrigatória de senha.
+O escopo e as escolhas estão em [WEB.md](WEB.md) e [WEB-DECISIONS.md](WEB-DECISIONS.md);
+resultados observados em [WEB-VALIDATION.md](audits/WEB-VALIDATION.md).
+Isso não constitui implementação de IA nem aceite integral de G04/G05.

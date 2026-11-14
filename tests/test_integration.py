@@ -158,3 +158,43 @@ def test_mikrotik_tcp_to_real_postgresql_pipeline():
             "routeros.admin_user.created",
         ]
         assert "do-not-store" not in str(rows)
+
+
+def test_registry_failure_makes_collector_unhealthy(monkeypatch):
+    import ipaddress
+
+    from logs_ai.collector import app as collector_app
+
+    class Registry:
+        failing = False
+
+        def sources(self):
+            if self.failing:
+                raise OSError("synthetic metadata failure")
+            return {ipaddress.ip_address("127.0.0.1")}
+
+    registry = Registry()
+    monkeypatch.setenv("CLIENTS_DATABASE_URL", "synthetic")
+    monkeypatch.setattr("logs_ai.client_registry.ClientRegistry", lambda _: registry)
+    with TestClient(collector_app) as client:
+        assert client.get("/health").status_code == 200
+        registry.failing = True
+        assert client.get("/health").status_code == 503
+
+
+def test_pre_migrated_schema_is_verified_without_ddl(monkeypatch):
+    import importlib
+
+    module = importlib.import_module("logs_ai.migrate")
+    migrate()
+    url = os.environ["TEST_DATABASE_URL"]
+    monkeypatch.setattr(
+        module,
+        "connect",
+        lambda: psycopg.connect(url, options="-c default_transaction_read_only=on"),
+    )
+    module.verify()
+    with connect_test_database(url) as conn:
+        conn.execute("UPDATE schema_migrations SET checksum='synthetic-wrong-checksum'")
+    with pytest.raises(RuntimeError, match="Schema differs"):
+        module.verify()

@@ -2,7 +2,8 @@
 
 Fundação do coletor de logs: API Python/FastAPI, PostgreSQL 17, migrations SQL e
 homologação com Docker Compose. G02 corresponde à Fase 1. A ingestão MikroTik TCP/CEF é um incremento da G03;
-IA e dashboard ainda não estão implementados.
+IA ainda não está implementada. A interface web autenticada tem dashboard, relatórios
+e gestão de clientes/usuários; ver [guia web](docs/WEB.md).
 
 A documentação vigente está no [índice operacional](docs/README.md);
 auditorias e resultados por versão estão em [docs/audits](docs/audits/README.md).
