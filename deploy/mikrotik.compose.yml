@@ -1,0 +1,34 @@
+# Set APP_REVISION to a full Git SHA. BuildKit checks out that object directly.
+services:
+  collector:
+    image: logs-ai-mikrotik:${APP_REVISION:?configure full commit SHA}
+    build:
+      context: https://github.com/provedorconsult/logs-ai.git#${APP_REVISION:?configure full commit SHA}
+      args:
+        APP_REVISION: ${APP_REVISION:?configure full commit SHA}
+    command: ["python", "-m", "logs_ai.collector"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?configure protected logs-ai database URL}
+      MIKROTIK_ALLOWED_SOURCE: ${MIKROTIK_ALLOWED_SOURCE:?configure router private IP}
+    ports:
+      - "${MIKROTIK_BIND_HOST:?configure VPS private IP}:5514:5514/tcp"
+      - "${COLLECTOR_HEALTH_BIND:-127.0.0.1}:${COLLECTOR_HEALTH_PORT:-18002}:8001/tcp"
+    networks:
+      - logs_ai_database
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 256m
+    cpus: 0.50
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+networks:
+  logs_ai_database:
+    external: true
+    name: ${LOGS_AI_DATABASE_NETWORK:?configure the dedicated logs-ai database network}

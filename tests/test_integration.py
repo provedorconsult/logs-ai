@@ -86,3 +86,75 @@ def test_concurrent_migrations_are_serialized():
         list(pool.map(lambda _: migrate(), range(2)))
     with psycopg.connect(os.environ["TEST_DATABASE_URL"]) as conn:
         assert conn.execute("SELECT count(*) FROM schema_migrations").fetchone()[0] == 1
+
+
+def test_mikrotik_event_is_committed_without_raw_password_or_schema_change():
+    from logs_ai.collector import store
+    from logs_ai.mikrotik import normalize
+
+    migrate()
+    event = normalize(
+        b"system,info ppp secret synthetic-user changed by test-admin (password=do-not-store)"
+    )
+    store(event, "192.168.15.1")
+    with psycopg.connect(os.environ["TEST_DATABASE_URL"]) as conn:
+        source, message, attributes = conn.execute(
+            "SELECT source,message,attributes FROM log_events"
+        ).fetchone()
+        assert source == "mikrotik:192.168.15.1"
+        assert message == "ppp.user.updated"
+        assert attributes["username"] == "synthetic-user"
+        assert attributes["actor"] == "test-admin"
+        assert "do-not-store" not in str(attributes)
+        assert conn.execute("SELECT count(*) FROM schema_migrations").fetchone()[0] == 1
+
+
+def test_mikrotik_tcp_to_real_postgresql_pipeline():
+    import asyncio
+
+    from logs_ai.collector import Receiver
+
+    migrate()
+
+    async def scenario():
+        receiver = Receiver("127.0.0.1")
+        worker = asyncio.create_task(receiver.consume())
+        server = await asyncio.start_server(receiver.handle, "127.0.0.1", 0)
+        _, writer = await asyncio.open_connection("127.0.0.1", server.sockets[0].getsockname()[1])
+        frames = [
+            (
+                b"CEF:0|MikroTik|RouterOS|7.24.5|ppp,info|"
+                b"logs-ai-ppp: <pppoe-synthetic>: authenticated|6|"
+            ),
+            b"ppp,info logs-ai-ppp: synthetic logged out, 60 1000 2000",
+            (
+                b"system,info logs-ai-admin: ppp secret synthetic changed by test-admin "
+                b"(password=do-not-store)"
+            ),
+            b"system,info logs-ai-admin: user operator added by test-admin",
+        ]
+        writer.write(b"\n".join(frames) + b"\n")
+        await writer.drain()
+        for _ in range(100):
+            if receiver.stats["received"] == 4:
+                break
+            await asyncio.sleep(0.01)
+        await asyncio.wait_for(receiver.queue.join(), timeout=10)
+        assert receiver.stats["persisted"] == 4
+        writer.close()
+        await writer.wait_closed()
+        server.close()
+        await server.wait_closed()
+        worker.cancel()
+        await asyncio.gather(worker, return_exceptions=True)
+
+    asyncio.run(scenario())
+    with psycopg.connect(os.environ["TEST_DATABASE_URL"]) as conn:
+        rows = conn.execute("SELECT attributes FROM log_events ORDER BY id").fetchall()
+        assert [r[0]["event_kind"] for r in rows] == [
+            "pppoe.authenticated",
+            "pppoe.session.ended",
+            "ppp.user.updated",
+            "routeros.admin_user.created",
+        ]
+        assert "do-not-store" not in str(rows)

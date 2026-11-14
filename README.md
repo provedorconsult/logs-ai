@@ -48,7 +48,9 @@ Em ambientes com CA de proxy, passe o bundle confiável como secret BuildKit
 `GET /health` retorna HTTP 200 com `{"status":"ok","database":"ok"}` somente
 quando uma consulta PostgreSQL valida conectividade e schema inicial. Retorna
 503 sem diagnósticos sensíveis se o banco ou schema não estiver disponível.
-Não há endpoints de ingestão nesta fase.
+O core G02 mantém `/health`. O incremento autorizado de ingestão MikroTik usa
+um coletor separado no mesmo projeto Dokploy e banco exclusivo de `logs-ai`:
+[integração MikroTik](docs/MIKROTIK.md). O receptor TCP/CEF não expõe escrita HTTP.
 
 ## Banco e migrations
 

@@ -56,6 +56,16 @@ técnico de G01/G02 e não concede privilégios ausentes às credenciais conecta
 As correções de CD desta rodada não exigem alterações na configuração base,
 SSH ou Tailscale.
 
+Solicitação posterior autoriza configurar a ingestão MikroTik no Dokploy e
+produzir scripts para a equipe de redes aplicar. O escopo usa RouterOS 7.24.5,
+clientes locais `/ppp secret`, rede privada e eventos PPPoE/alterações
+administrativas. Isso autoriza este incremento de ingestão da G03, sem aprovar
+integralmente G02/G03 nem incluir IA nesta entrega. O Codex deve manter o
+MikroTik somente em leitura; a aplicação dos scripts pertence à equipe de redes.
+Para essa leitura, o responsável autorizou SSH com usuário/senha do ambiente e
+confirmou a identidade do host; a exceção é específica do roteador e não muda
+o contrato de autenticação da VPS. Não imprimir credenciais ou logs brutos.
+
 ## Checker (Hermes) e Devs Humanos
 
 Atuam em revisão pós-deploy diretamente no código versionado e no servidor de
