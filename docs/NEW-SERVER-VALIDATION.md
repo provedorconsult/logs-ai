@@ -6,7 +6,7 @@ o serviço histórico `827fa14` automaticamente.
 
 ## Verificado
 
-- 189 testes aprovados com PostgreSQL 17 descartável: guards anteriores de CD,
+- 191 testes aprovados com PostgreSQL 17 descartável: guards anteriores de CD,
   parser RouterOS, TCP/DB, múltiplas origens com retry sem troca de atribuição,
   geração privada/exclusiva e recusa de nomes inválidos, injeção e binds públicos.
 - Ruff, formatação, lock/export de requirements e Actionlint aprovados.
@@ -56,3 +56,13 @@ comissionamento real por origem, backup/restauração e inventário do seu desti
 A fila permanece em memória e syslog não confirma transação por evento.
 Skills são instruções, não autorização global, independência de Checker ou
 aprovação integral de gates/CD.
+
+
+## Compatibilidade de configuração do coletor anexado
+
+Uma verificação adicional com o CLI real do Compose identificou avaliação
+antecipada de fallback obrigatório aninhado: a configuração plural exigia
+indevidamente a variável singular. Os dois campos agora têm defaults separados;
+o runtime exige ao menos uma allowlist. Dois testes de regressão executam o
+interpolador real nos modos singular/plural. O relatório estrutural publicado
+em paralelo pelo Auditor Gemini foi integrado sem alteração do seu conteúdo.

@@ -9,7 +9,10 @@ services:
     command: ["python", "-m", "logs_ai.collector"]
     environment:
       DATABASE_URL: ${DATABASE_URL:?configure protected logs-ai database URL}
-      MIKROTIK_ALLOWED_SOURCES: "${MIKROTIK_ALLOWED_SOURCES:-${MIKROTIK_ALLOWED_SOURCE:?configure router private IPs}}"
+      # Keep defaults separate: Compose eagerly expands nested required defaults.
+      # The collector rejects startup when neither allowlist is configured.
+      MIKROTIK_ALLOWED_SOURCES: "${MIKROTIK_ALLOWED_SOURCES:-}"
+      MIKROTIK_ALLOWED_SOURCE: "${MIKROTIK_ALLOWED_SOURCE:-}"
     ports:
       - "${MIKROTIK_BIND_HOST:?configure VPS private IP}:5514:5514/tcp"
       - "${COLLECTOR_HEALTH_BIND:-127.0.0.1}:${COLLECTOR_HEALTH_PORT:-18002}:8001/tcp"

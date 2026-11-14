@@ -1,6 +1,9 @@
 import copy
 import json
+import os
+import shutil
 import stat
+import subprocess
 
 import pytest
 from prepare_installation import ROOT, prepare, validate
@@ -118,3 +121,22 @@ def test_readiness_rejects_an_old_healthy_revision(tmp_path, monkeypatch):
 
 def test_example_profile_is_a_valid_profile():
     assert validate(profile())
+
+
+@pytest.mark.skipif(shutil.which("docker") is None, reason="Docker Compose CLI is required")
+@pytest.mark.parametrize("variable", ["MIKROTIK_ALLOWED_SOURCE", "MIKROTIK_ALLOWED_SOURCES"])
+def test_attached_compose_accepts_either_allowlist_without_requiring_the_other(variable):
+    env = {
+        "PATH": os.environ["PATH"],
+        "APP_REVISION": SHA,
+        "DATABASE_URL": "postgresql://synthetic:synthetic@postgres:5432/synthetic",
+        "MIKROTIK_BIND_HOST": "10.77.0.25",
+        "LOGS_AI_DATABASE_NETWORK": "synthetic-network",
+        variable: "10.77.0.1",
+    }
+    subprocess.run(
+        ["docker", "compose", "-f", str(ROOT / "deploy/mikrotik.compose.yml"), "config", "--quiet"],
+        env=env,
+        check=True,
+        capture_output=True,
+    )
