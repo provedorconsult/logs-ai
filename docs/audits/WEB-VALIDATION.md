@@ -99,6 +99,40 @@ O job administrativo temporário foi sanitizado/removido após os testes, sem
 remover volumes. Configurações completas anteriores, intenções e recibos ficam
 no armazenamento operacional protegido; não são publicados neste relatório.
 
+## Correção do acesso público — 14/11/2026, 12:44 UTC
+
+Após o usuário informar `ERR_CONNECTION_REFUSED`, a consulta do Dokploy mostrou
+Traefik com `versionStatus=not-found`: não havia proxy nativo em execução.
+O web continuava saudável. A verificação anterior de labels/domínio não detectou
+esse pré-requisito ausente; configuração de roteamento não prova listener ativo.
+
+`settings.reloadTraefik` respondeu true, mas não criou o recurso. O código da
+versão v0.31.2 foi consultado: esse endpoint só reinicia recurso preexistente e
+executa em background. O resultado aceito não era confirmação de recuperação.
+
+Foi restaurado o container nativo `dokploy-traefik`, formato standalone esperado
+pelo Dokploy, imagem `traefik:v3.7.16`, ID de imagem
+`sha256:1336e85aaed293bd63d005086e0dd013b04078b26aaeb1c18b26a2f928af7e65`.
+Rede `dokploy-network`, configuração/diretório dinâmico existentes e socket
+Docker montados; TCP 80/443 e UDP 443 publicados, sem publicar dashboard 8080.
+O bootstrap recusava substituir container/serviço preexistente. Não houve
+alteração de firewall, SSH, Tailscale ou MikroTik.
+
+O usuário forneceu `contato@canaldoprovedor.net.br` para ACME, substituindo o
+placeholder anterior. A configuração foi salva com snapshot protegido. O estado
+final do Dokploy é `running`, versão recomendada 3.7.16, sem erro de atualização.
+
+O armazenamento ACME foi consultado somente para metadados do certificado
+público, sem imprimir chave privada ou conta ACME: SAN exato do domínio,
+emissor Let's Encrypt YR2, validade de `2026-11-14T11:45:57Z` até
+`2027-02-12T11:45:56Z`, temporalmente válido. Isso comprova emissão/instalação;
+o acesso HTTPS de um cliente externo pelo Maker continua limitado pelo grant do
+executor. A recusa reportada pelo usuário é distinta do 403 desse proxy.
+
+O recurso temporário de recuperação foi removido após as consultas; o proxy
+nativo permanece gerido pelo Dokploy, sem Compose persistente concorrente.
+Web/coletor continuam na revisão `3dd5967`, sem novo deploy de código.
+
 O Maker não altera a senha inicial da conta real para simular primeiro acesso.
 O bootstrap não mantém senha em texto, e a obrigatoriedade de troca será
 conferida no registro inicial e no backend. Aplicações SSH reais dependem da

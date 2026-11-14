@@ -45,3 +45,10 @@ pendentes de CD e aceite independente não foram declarados concluídos.
 O host público continua bloqueado pelo proxy do executor: configuração HTTPS
 confirmada no Dokploy/Traefik, validação pública TLS/login pendente de grant de
 rede. Detalhes e IDs em [WEB-VALIDATION.md](audits/WEB-VALIDATION.md).
+
+Em seguida, o usuário relatou conexão recusada. Foi identificado o proxy nativo
+ausente e restaurado `dokploy-traefik` 3.7.16 no formato standalone reconhecido
+pelo Dokploy. Snapshot da configuração antes da correção preservado. O contato
+ACME passou a `contato@canaldoprovedor.net.br`, informado pelo usuário; certificado
+Let's Encrypt emitido para o domínio e validade conferida no armazenamento
+local. A recuperação não alterou firewall/SSH/MikroTik nem o código implantado.

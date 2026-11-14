@@ -47,3 +47,12 @@ TLS validado e seguir grants de rede do executor; nunca contornar um bloqueio
 do proxy. Registrar verificações pendentes com precisão. Remover job temporário
 e seu ambiente administrativo, preservando recuperação no armazenamento privado.
 Atualizar `docs/audits/WEB-VALIDATION.md`; aceite independente segue com o Checker.
+
+Antes de declarar domínio operacional, conferir também
+`settings.getTraefikOverview`, listener/port bindings efetivos em 80/443 e
+certificado instalado para o SAN correto. `versionStatus=not-found` indica
+pré-requisito ausente, mesmo com web saudável e labels corretas. No Dokploy
+v0.31.2, `reloadTraefik=true` só aceita um reinício assíncrono e não cria proxy
+ausente. Consultar implementação/contrato e preservar recursos antes de restaurar
+o proxy nativo; não criar outro proxy concorrente nem deixar um job com socket
+Docker montado. Usar contato ACME informado, sem inventar endereço de e-mail.
