@@ -105,3 +105,37 @@ Parser corrigido para aceitar o separador nativo, sem exigir mudança no roteado
 classificação PPP exige tópico PPP/PPPoE. Regressões cobrem os dois formatos de
 prefixo e impedem classificar mensagens system como PPP. Registros produzidos
 antes da correção precisam de reconciliação identificável; não apagar eventos.
+
+## Deploy com separador corrigido e reconciliação
+
+Revisão implantada: `827fa14a29d52598fdc967699887acd1f127146e`.
+CI [43543735059](https://github.com/provedorconsult/logs-ai/actions/runs/43543735059):
+`verify=success`, `deploy=skipped`. 163 testes locais passaram com PostgreSQL 17.
+Deployment `1fm0EbxwkwfcGpt3SppeN`: `done`; build fixado no objeto Git completo.
+Imagem `sha256:dbbfe60e6245b2d2e761dde44234ad8f9c839e50c4f043e025cf2454c8132d52`.
+`/health` retornou 200, banco OK e header igual à revisão. O contêiner ficou
+saudável sem reinícios, com recepção privada e o core anterior preservados.
+
+Reconciliação transacional dos registros da versão intermediária:
+
+- Fonte exata `mikrotik:192.168.15.1`, intervalo entre criação do deployment
+  `e9cba0d` e início do contêiner `827fa14`, username começando com `: `,
+  mensagem/tipo anterior iguais a `pppoe.session.started` ou `ended`.
+- Para tópicos system/account sem PPP e username `: user <ator>`, tipo corrigido
+  para login/logout administrativo e ator extraído. Para tópicos PPP/PPPoE,
+  somente o separador indevido do username foi retirado.
+- Valores anteriores de mensagem/atributos foram preservados em
+  `normalization_previous`; `normalization_repaired_by` registra a revisão.
+  Fonte, ID e horário de recepção foram preservados. Nenhum evento foi apagado.
+- 16 registros corrigidos: cinco inícios PPP, cinco términos PPP, três logins
+  e três logouts administrativos. Zero casos desconhecidos e zero candidatos
+  restantes. A auditoria inicial tinha 14 registros; mais dois chegaram antes
+  da troca de versão. Plano e recibo completos ficam no armazenamento protegido.
+- Procedimento validado em PostgreSQL descartável para dry-run sem escrita,
+  aplicação, idempotência, preservação de originais e isolamento de outra fonte.
+
+Após o novo deploy, logout administrativo nativo foi recebido e gravado com
+classificação correta. A equipe foi solicitada a repetir a alteração de usuário
+após a correção. Eventos anteriores ignorados não foram recuperados: não havia
+replay nem persistência de mensagem bruta. Contadores `/metrics` representam o
+processo atual e não incluem reparos históricos executados diretamente no banco.
