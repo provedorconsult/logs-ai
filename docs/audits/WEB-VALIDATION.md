@@ -133,6 +133,30 @@ O recurso temporário de recuperação foi removido após as consultas; o proxy
 nativo permanece gerido pelo Dokploy, sem Compose persistente concorrente.
 Web/coletor continuam na revisão `3dd5967`, sem novo deploy de código.
 
+## Ajuste do relatório após confirmação de acesso
+
+O usuário confirmou acesso estabelecido após a restauração do proxy. A entrega
+`2da378f` adiciona IP PPPoE, remove Categoria da tabela principal e exibe o nome
+cadastrado da origem, inclusive no filtro e nas exportações. Sem endereço no
+evento, exibe traço; origem sem cadastro tem rótulo explícito, sem inferir IP de
+outra sessão. Chaves técnicas dos filtros e registros históricos são preservados.
+
+202 testes locais passaram com PostgreSQL 17 descartável. O teste de integração
+confere endereço PPPoE, ausência para evento administrativo, nome cadastrado e
+CSV; o teste de navegador confere a nova coluna, ausência de Categoria e nome
+da origem, além dos cenários anteriores desktop/mobile, sem erros de console.
+
+CI [43599069629](https://github.com/provedorconsult/logs-ai/actions/runs/43599069629)
+terminou com `verify=success`, `deploy=skipped`. Deploy manual somente do web:
+`KPaZh9P8sxfq68GiZvMsM`, status done, SHA completo
+`2da378fa579dd167bee750d38ad5ceed3154bd7b`, imagem local
+`sha256:d1f979598395351be737c0662b0fe508ed7afaa34bd961f07236f5479a315544`.
+Container healthy, sem reinícios; `/health` interno HTTP 200 e revisão exata.
+Consulta remota somente leitura retornou 216 eventos no intervalo e página de
+10 registros: todos com nome cadastrado, três com IP PPPoE no próprio evento.
+CSV e PDF com dados reais foram gerados com sucesso. Diagnóstico temporário
+sanitizado/removido. Coletor/core não foram reimplantados nesta alteração.
+
 O Maker não altera a senha inicial da conta real para simular primeiro acesso.
 O bootstrap não mantém senha em texto, e a obrigatoriedade de troca será
 conferida no registro inicial e no backend. Aplicações SSH reais dependem da
