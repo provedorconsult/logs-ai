@@ -175,3 +175,28 @@ alteração de conta administrativa `/user`. Alterações de clientes em
 `/ppp secret` têm testes sintéticos, mas ainda não foram demonstradas com evento
 real nesta rodada. Esses dois menus não são equivalentes. Revisão independente
 Hermes/Devs Humanos e aceite integral dos gates/CD continuam pendentes.
+
+## Criação real de cliente PPP confirmada
+
+Depois da consulta anterior, a equipe criou uma conta de teste em `/ppp secret`.
+O coletor registrou `ppp.user.created` e uma consulta PostgreSQL somente leitura,
+restrita à fonte e ao identificador informado, confirmou exatamente um evento
+de criação dessa conta (`2026-11-14 02:29:44.073817+00`, 13/11/2026 às 23h29 em
+São Paulo). O identificador e o comentário não são publicados no relatório.
+
+A pendência de demonstrar um evento real de `/ppp secret` está resolvida para
+**criação**. Junto das evidências anteriores, foram comprovados autenticação
+PPPoE, início/fim de sessão, atualização administrativa `/user` e criação de
+cliente PPP local. Edição/remoção de cliente PPP não foram exercitadas em evento
+real; seguem cobertas por testes sintéticos, sem ampliar o resultado observado.
+
+Na nova consulta: 25 recebidos, 16 persistidos, nove ignorados, fila vazia,
+zero erros de banco e conexão ativa. Revisão `827fa14`, saúde 200, sem reinícios,
+mesma migration/checksum. Nenhum novo deploy foi necessário para os testes.
+O comentário informado pela equipe não foi armazenado nem validado como valor
+de campo: a política é registrar a alteração sem persistir comandos brutos.
+
+Os contêineres/recursos temporários de diagnóstico foram removidos, preservando
+somente `logs-ai-core` e `logs-ai-mikrotik` no ambiente. Esta evidência é do Maker;
+a revisão independente e o aceite integral de G01/G02/G03 e CD não decorrem
+automaticamente do sucesso funcional desta integração.
