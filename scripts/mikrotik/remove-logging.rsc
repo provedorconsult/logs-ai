@@ -1,3 +1,5 @@
+# Single block keeps local variables in scope during RouterOS import.
+{
 # Network team rollback: removes only this integration's matching rules/action.
 :local actionName "logs-ai-private"
 :local pppPrefix "logs-ai-ppp: "
@@ -33,3 +35,4 @@
     }
 }
 :put "logs-ai: removal completed; PPP profiles and users were preserved"
+}

@@ -21,7 +21,24 @@ Contagens operacionais e credenciais não são publicadas neste relatório.
 
 ## Deploy e aceite
 
-Deploy do coletor ainda pendente no momento deste commit de implementação.
+Coletor implantado: `0d4e729fb88bf39f019ce39cfcc54bc215985e47`.
+CI [43535488453](https://github.com/provedorconsult/logs-ai/actions/runs/43535488453):
+`verify=success`, `deploy=skipped`. O deploy foi executado pelo Maker via API.
+
+- Recurso `logs-ai-mikrotik` no projeto `logs-ai`, ambiente `homologacao`.
+- Deployment `4qPC4EOTuW3WTph3_heyU`: `done`; logs de build confirmaram fetch
+  do objeto Git completo. Imagem:
+  `sha256:3585bf5e52fe9d56f868af09ec8f1f844e5a1b997a15cb56cf470e8232e99ad9`.
+- Contêiner saudável, UID `10001:10001`, filesystem somente leitura, zero
+  reinícios na inspeção. Label OCI e `X-App-Revision` iguais ao SHA implantado.
+- `/health`: HTTP 200, `status=ok`, `database=ok`. Saúde administrativa usa
+  a porta 18002 no IP Tailnet configurado (`APP_TEST_URL` registrado no recibo
+  operacional protegido); recepção somente `192.168.15.25:5514/tcp`.
+- Consulta remota de leitura confirmou somente `001_initial.sql`, checksum
+  `e749720863762629d83a527ccfc9adc5755a48c87d185e7319cdc51553a6dfe2`.
+- Conexão sintética originada da VPS foi encerrada pelo filtro; nenhum evento
+  desse teste foi persistido. Zero eventos reais na primeira consulta do banco.
+
 O artefato raw Compose fixa o contexto de build no SHA completo, sem depender
 de criação/recriação de tags. O CD anterior baseado em tags continua pendente;
 esta entrega não comprova proteção administrativa de tags ou CD automático.

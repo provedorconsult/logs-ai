@@ -1,3 +1,5 @@
+# Single block keeps local variables in scope during RouterOS import.
+{
 # RouterOS 7.24.5. Apply by the network team, after checking the receiver health.
 # Sends native CEF over TCP on the private network. No PPP profiles/users are changed.
 # Do not enable debug/packet logging: only the requested informational events are selected.
@@ -57,3 +59,4 @@
     /system logging add topics=system,info,!ppp action=$actionName prefix=$adminPrefix
 }
 :put "logs-ai: private TCP/CEF forwarding configured; verify persisted events at the receiver"
+}
