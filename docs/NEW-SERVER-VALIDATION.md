@@ -66,3 +66,14 @@ indevidamente a variável singular. Os dois campos agora têm defaults separados
 o runtime exige ao menos uma allowlist. Dois testes de regressão executam o
 interpolador real nos modos singular/plural. O relatório estrutural publicado
 em paralelo pelo Auditor Gemini foi integrado sem alteração do seu conteúdo.
+
+## CI publicada
+
+Código publicado em `8ae6720` e correção de compatibilidade em
+`e280edc1e5d536dd99508cfb6d03bac684375caa`, preservando o relatório estrutural
+remoto `32c091d`. A CI [43549640791](https://github.com/provedorconsult/logs-ai/actions/runs/43549640791)
+concluiu `verify=success`, incluindo build e readiness do pacote completo;
+`deploy=skipped`. A interface CLI documentada também gerou um pacote novo e
+passou no `docker compose config --quiet`; a prévia privada foi removida.
+Essa execução comprova checks de código/pacote, não bootstrap de outra VPS nem
+comissionamento de roteadores que ainda não foram conectados.
